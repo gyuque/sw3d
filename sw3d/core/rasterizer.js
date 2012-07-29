@@ -194,10 +194,11 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			function calcSlopeOnEdge(vStart, vEnd, slope) {
 				var y1 = vStart.position.y;
 				var y2 = vEnd.position.y;
-				var yLength = y2 - y1;
+				var yLength = y2 - y1 + 0.5;
 
-				for (var y = y1;y < y2;++y) {
-					var t = (y-y1 + 0.5) / yLength;
+				for (var y = y1;y <= y2;++y) {
+					var t = (y-y1+0.5) / yLength;
+				
 					if (slope[y]) {
 						// Interpolate vertex attributes.
 						// For example, vertex colors will generate a gradient.
@@ -282,6 +283,18 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 									p[pos++] = pixelColor.b;
 									p[pos++] = pixelColor.a;
 									pz[zpos++] = newZ;
+									/*
+									console.log(newZ+"   ", this.vertexAttributes[0].position.z,
+										this.vertexAttributes[1].position.z,
+										this.vertexAttributes[2].position.z,
+										spanLeftEnd, spanRightEnd);
+										*/
+/*
+										console.log(newZ+"   ", this.vertexAttributes[0].position.y,
+											this.vertexAttributes[1].position.y,
+											this.vertexAttributes[2].position.y,
+											y);
+*/
 								} else {
 									// Z test is false
 									// Advance one pixel
