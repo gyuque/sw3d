@@ -4,13 +4,15 @@
 	var SCREEN_HEIGHT = 256;
 	
 	window.launch = function() {
+		var textureLoader = new smallworld3d.CanvasTextureLoader(MIKU_MODEL_SOURCE.texture_data, function() {
 		
-		theViewer = new Viewer(document.getElementById("render-target"));
-		theViewer.buildMesh(MIKU_MODEL_SOURCE);
+			theViewer = new Viewer(document.getElementById("render-target"));
+			theViewer.buildMesh(MIKU_MODEL_SOURCE);
 		
-		theViewer.observeMouse(document.body);
+			theViewer.observeMouse(document.body);
 		
-		theViewer.render();
+			theViewer.render();
+		});
 	};
 
 	function Viewer(targetCanvas) {
