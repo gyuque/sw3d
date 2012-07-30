@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<script type="text/javascript" src="../sw3d/core/types.js"></script>
+<script type="text/javascript" src="../sw3d/core/imagebuffer.js"></script>
+<script type="text/javascript" src="../sw3d/core/geometry-core.js"></script>
+<script type="text/javascript" src="../sw3d/core/rasterizer.js"></script>
+<script type="text/javascript" src="../sw3d/core/nearest-texture-sampler.js"></script>
+<script type="text/javascript" src="../sw3d/basic/pure-js-png-texture-loader.js"></script>
+<script type="text/javascript">
+var gTextureLoader;
+
+function doTest() {
+	/*
+	gTextureLoader = new smallworld3d.PureJSPNGTextureLoader("data:image/png;base64,"+
+	"iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO"+
+	"9TXL0Y4OHwAAAABJRU5ErkJggg==", function(){
+		afterTextureLoad();
+	});*/
+	afterTextureLoad();
+}
+
+function afterTextureLoad() {
+	var cv = document.getElementById('cv1');
+	var g = cv.getContext('2d');
+	var W = 32;
+	var H = 18;
+	var SCALE = 9;
+	var buf = new smallworld3d.ImageBuffer(W, H, true);
+	var r = new smallworld3d.Rasterizer(buf);
+	buf.emitPixels = function() {
+		var p = this.color;
+		g.clearRect(0, 0, W, H);
+		var pos = 0;
+		var bR, bG, bB, bA;
+		for (var y = 0;y < H;y++) {
+			for (var x = 0;x < W;x++) {
+				bR = p[pos++];
+				bG = p[pos++];
+				bB = p[pos++];
+				bA = p[pos++];
+				g.fillStyle = 'rgb('+ bR +','+ bG +','+ bB +')';
+				g.fillRect(x*SCALE, y*SCALE, SCALE-1, SCALE-1);
+			}
+		}
+	};
+
+	buf.clearZ(1);
+
+	// setup texture
+	var textureSampler1 = new smallworld3d.NearestTextureSampler();
+	r.textureSampler = textureSampler1;
+
+	r.setVertexAttribute(
+		0,
+		3, 9, 0, 1,
+		255, 0, 255, 255,
+		0, 0);
+
+	r.setVertexAttribute(
+		1,
+		2, 2, 0, 1,
+		255, 0, 0, 255,
+		0, 0);
+
+	r.setVertexAttribute(
+		2,
+		18, 10, 0, 1,
+		0, 255, 0, 255,
+		0, 0);
+
+	r.fillTriangle();
+
+/*
+	r.setVertexAttribute(
+		0,
+		3, 9, 0, 1,
+		255, 0, 255, 255,
+		0, 0);
+
+	r.setVertexAttribute(
+		1,
+		-2, 2, 0, 1,
+		255, 0, 0, 255,
+		0, 0);
+
+	r.setVertexAttribute(
+		2,
+		10, 3, 0, 1,
+		255, 255, 0, 255,
+		0, 0);
+
+
+	r.fillTriangle();
+	//r.plotPoints();
+
+*/
+
+	r.setVertexAttribute(
+		0,
+		3, 9, 0, 1,
+		255, 0, 255, 255,
+		0, 0);
+
+	r.setVertexAttribute(
+		1,
+		18, 10, 0, 1,
+		0, 255, 0, 255,
+		0, 0);
+
+	r.setVertexAttribute(
+		2,
+		17, 17, 0, 1,
+		255, 255, 255, 255,
+		0, 0);
+
+	r.fillTriangle();
+//r.plotPoints();
+	buf.emitPixels();
+}
+</script>
+<title>Rasterizer test</title>
+<body onload="void doTest()">
+ <canvas width="320" height="180" id="cv1"></canvas>
