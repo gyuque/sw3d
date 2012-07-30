@@ -6,10 +6,6 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 	function Rasterizer(imageBuffer) {
 		this.target = imageBuffer;
 		
-		// Allocate buffers
-		this.frameBuffer = this.allocateBuffer(w, h, 'color');
-		this.zBuffer = this.allocateBuffer(w, h, 'depth');
-		
 		// Texture sampler. Set null to use no texture.
 		this.textureSampler = null;
 		
@@ -34,52 +30,11 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		//  for gouraud shading
 		this.leftSlope = null;
 		this.rightSlope = null;
-		this.allocateSlopeBuffer(h);
+		this.allocateSlopeBuffer(this.target.height);
 		this.spanFragment = new SlopeElement();
 	}
 	
 	Rasterizer.prototype = {
-		clearColor: function(r, g, b) {
-			var buf = this.frameBuffer;
-			var pos = 0;
-			var len = this.width * this.height;
-			for (var i = 0;i < len;i++) {
-				buf[pos++] = r;
-				buf[pos++] = g;
-				buf[pos++] = b;
-				buf[pos++] = 255;
-			}
-		},
-		
-		clearZ: function(z) {
-			var buf = this.zBuffer;
-			var len = this.width * this.height;
-			for (var i = 0;i < len;i++) {
-				buf[i] = z;
-			}
-		},
-		
-		emitToCanvas: function(context2d) {
-			var w = this.width;
-			var h = this.height;
-			
-			var imageData = context2d.getImageData(0, 0, w, h);
-			var dest = imageData.data;
-			var source = this.frameBuffer;
-			var pos = 0;
-			
-			for (var y = 0;y < h;y++) {
-				for (var x = 0;x < w;x++) {
-					dest[pos]   = source[pos++];
-					dest[pos]   = source[pos++];
-					dest[pos]   = source[pos++];
-					dest[pos++] = 255;
-				}
-			}
-			
-			context2d.putImageData(imageData, 0, 0);
-		},
-		
 		fillTriangle: function() {
 			var vlist = this.vertexAttributes;
 			var v1 = vlist[0], v2 = vlist[1], v3 = vlist[2];
@@ -113,15 +68,6 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			this.flatConstantColor = v1.color;
 			this.scan(vlist[ix1].position.x, vlist[iy1].position.y,
 				      vlist[ix3].position.x, vlist[iy3].position.y);
-		},
-		
-		
-		allocateBuffer: function(w, h, bufferType) {
-			if (bufferType == 'depth') {
-				return new Float64Array(w*h);
-			} else {
-				return new Uint8Array(w*4 *h);
-			}
 		},
 		
 		allocateSlopeBuffer: function(h) {
@@ -171,9 +117,9 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		
 		putOneVertex: function(v) {
 			var x = v.position.x, y = v.position.y;
-			var w = this.width, h = this.height;
+			var w = this.target.width, h = this.target.height;
 			var fbPitch = w << 2;
-			var p = this.frameBuffer;
+			var p = this.target.color;
 			
 			if (y >= 0 && y < h && x >= 0 && x < w) {
 				var pos = fbPitch * y + (x << 2);
@@ -234,10 +180,10 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			var E0 = this.edges[0], E1 = this.edges[1], E2 = this.edges[2];
 			
 			var x, y;
-			var w = this.width, h = this.height;
+			var w = this.target.width, h = this.target.height;
 			var fbPitch = w << 2;
-			var p = this.frameBuffer;
-			var pz = this.zBuffer;
+			var p = this.target.color;
+			var pz = this.target.z;
 			var pos;
 			var zpos;
 			var fragment = this.spanFragment;

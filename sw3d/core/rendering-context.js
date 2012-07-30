@@ -15,7 +15,8 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		this.viewTransform       = new M44();
 		this.worldTransform      = new M44();
 		
-		this.rasterizer = new smallworld3d.Rasterizer(w, h);
+		this.imageBuffer = new smallworld3d.ImageBuffer(w, h, true);
+		this.rasterizer = new smallworld3d.Rasterizer(this.imageBuffer);
 		
 		this.combinedTransforms = {
 			worldView: new M44(),
