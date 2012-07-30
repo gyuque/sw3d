@@ -3,10 +3,8 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 (function(pkg) {
 	'use strict';
 
-	function Rasterizer(w, h) {
-		// Size of frame buffer
-		this.width = w;
-		this.height = h;
+	function Rasterizer(imageBuffer) {
+		this.target = imageBuffer;
 		
 		// Allocate buffers
 		this.frameBuffer = this.allocateBuffer(w, h, 'color');
