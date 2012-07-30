@@ -205,7 +205,6 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 						slope[y].interpolate(vStart, vEnd, t);
 					}
 				}
-				//console.log(vStart, vEnd, slope, y1, y2, yLength)
 			}
 			
 			
@@ -216,7 +215,6 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			
 			if (dy == 0) {dy = 1};
 			var x_mid = v1.position.x + (dx/dy) * dy_mid;
-			//console.log(x_mid, x2);
 			if (x_mid < x2) {
 				// |> Long edge is on left.
 				// Left: v1-v3
@@ -283,18 +281,6 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 									p[pos++] = pixelColor.b;
 									p[pos++] = pixelColor.a;
 									pz[zpos++] = newZ;
-									/*
-									console.log(newZ+"   ", this.vertexAttributes[0].position.z,
-										this.vertexAttributes[1].position.z,
-										this.vertexAttributes[2].position.z,
-										spanLeftEnd, spanRightEnd);
-										*/
-/*
-										console.log(newZ+"   ", this.vertexAttributes[0].position.y,
-											this.vertexAttributes[1].position.y,
-											this.vertexAttributes[2].position.y,
-											y);
-*/
 								} else {
 									// Z test is false
 									// Advance one pixel
