@@ -15,21 +15,36 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 	
 	CanvasTextureLoader.prototype = {
 		onImageLoad: function() {
-			this.copyImage();
 			if (this.callback) {
-				this.callback(this);
+				this.callback( this.copyImage() );
 			}
 		},
 		
 		copyImage: function() {
 			var img = this.img;
 			this.canvas = document.createElement("canvas");
-			this.canvas.width  = img.width;
-			this.canvas.height = img.height;
+			
+			var w = img.width;
+			var h = img.height;
+			this.canvas.width  = w;
+			this.canvas.height = h;
 			
 			var g = this.canvas.getContext("2d");
 			g.drawImage(img, 0, 0);
-			console.log(g)
+			var imageData = g.getImageData(0, 0, w, h);
+			var sourcePixels = imageData.data;
+			
+			var texBuffer = new smallworld3d.ImageBuffer(w, h, false);
+			var destPixels = texBuffer.color;
+			
+			var pos = 0;
+			for (var y = 0;y < h;y++) {
+				for (var x = 0;x < w;x++) {
+					destPixels[pos] = sourcePixels[pos++];
+				}
+			}
+			
+			return texBuffer;
 		}
 	};
 	

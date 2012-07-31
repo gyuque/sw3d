@@ -7,6 +7,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		this.vertices = [];
 		this.indices  = [];
 		this.groups   = [];
+		this.materials = [];
 		
 		this.transformedVertices = [];
 	}
@@ -26,6 +27,11 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		
 		addTriangleGroup: function(nTriangles) {
 			this.groups.push(nTriangles);
+			this.materials.push(null);
+		},
+		
+		setGroupMaterial: function(index, m) {
+			this.materials[index] = m;
 		},
 		
 		doTransform: function(renderingContext) {
@@ -46,9 +52,10 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			var ls = this.indices;
 			var vs = this.transformedVertices;
 			for (var i = 0;i < len;i++) {
-				var a = ls[i*3  ];
-				var b = ls[i*3+1];
-				var c = ls[i*3+2];
+				var ti = startIndex + i;
+				var a = ls[ti*3  ];
+				var b = ls[ti*3+1];
+				var c = ls[ti*3+2];
 				
 				var vA = vs[a];
 				var vB = vs[b];

@@ -40,7 +40,12 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		
 		this.position.w = 1;
 	}
-
+	
+	function TexturedMaterial(textureImageBuffer) {
+		this.textureImageBuffer = textureImageBuffer;
+		this.color = new RGBAColor(255, 255, 255, 255);
+	}
+	
 	function TransformedVertex() {
 		this.position  = new smallworld3d.geometry.Vec4();
 		this.textureUV = new UVCoordinate();
@@ -62,5 +67,6 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 	pkg.UVCoordinate = UVCoordinate;
 	pkg.RasterizerVertexPosition = RasterizerVertexPosition;
 	pkg.Viewport = Viewport;
+	pkg.TexturedMaterial = TexturedMaterial;
 
 })(window.smallworld3d);

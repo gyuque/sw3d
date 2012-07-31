@@ -198,8 +198,10 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 				if (y >= 0 && y < h) { // Y clipping
 					var spanLeftEnd = this.leftSlope[y];
 					var spanRightEnd = this.rightSlope[y];
+					
+					var lineOrigin = fbPitch * y;
 					var xLeftEnd = Math.floor(spanLeftEnd.x);
-					var xLength = (spanRightEnd.x - xLeftEnd)+1;
+					var xLength = Math.ceil(spanRightEnd.x + 1) - xLeftEnd;
 					pos = null;
 					
 					for (x = xmin;x <= xmax;++x) {
@@ -209,11 +211,12 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 							// Inside triangle
 							if (x >= 0 && x < w) { // X clipping
 								if (pos === null) {
-									pos = fbPitch * y + (x << 2);
+									pos = lineOrigin + (x << 2);
 									zpos = pos >> 2;
 								}
 								
 								var xRatio = (x-xLeftEnd) / xLength;
+								
 								SlopeElement.interpolateSlopeElements(spanLeftEnd, spanRightEnd, xRatio, fragment);
 								var pixelColor = fragment.color;
 								var newZ = fragment.z;
