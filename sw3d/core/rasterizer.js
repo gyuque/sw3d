@@ -188,6 +188,10 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			var zpos;
 			var fragment = this.spanFragment;
 			
+			// Y clipping
+			if (ymin < 0) {ymin = 0;}
+			if (ymax >= h) {ymax = h-1;}
+			
 			// Initialize edge function value
 			E0.start(xmin, ymin);
 			E1.start(xmin, ymin);
@@ -195,61 +199,59 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			
 			// Scan over the bounding box of target triangle
 			for (y = ymin;y <= ymax;++y) {
-				if (y >= 0 && y < h) { // Y clipping
-					var spanLeftEnd = this.leftSlope[y];
-					var spanRightEnd = this.rightSlope[y];
-					
-					var lineOrigin = fbPitch * y;
-					var xLeftEnd = Math.floor(spanLeftEnd.x);
-					var xLength = Math.ceil(spanRightEnd.x + 1) - xLeftEnd;
-					pos = null;
-					
-					for (x = xmin;x <= xmax;++x) {
-						if (E0.edgeFuncVal <= 0 && // |
-							E1.edgeFuncVal <= 0 && // |-> Evaluate edge function values
-							E2.edgeFuncVal <= 0) { // |
-							// Inside triangle
-							if (x >= 0 && x < w) { // X clipping
-								if (pos === null) {
-									pos = lineOrigin + (x << 2);
-									zpos = pos >> 2;
-								}
-								
-								var xRatio = (x-xLeftEnd) / xLength;
-								
-								SlopeElement.interpolateSlopeElements(spanLeftEnd, spanRightEnd, xRatio, fragment);
-								var pixelColor = fragment.color;
-								var newZ = fragment.z;
+				var spanLeftEnd = this.leftSlope[y];
+				var spanRightEnd = this.rightSlope[y];
+				
+				var lineOrigin = fbPitch * y;
+				var xLeftEnd = Math.floor(spanLeftEnd.x);
+				var xLength = Math.ceil(spanRightEnd.x + 1) - xLeftEnd;
+				pos = null;
+				
+				for (x = xmin;x <= xmax;++x) {
+					if (E0.edgeFuncVal <= 0 && // |
+						E1.edgeFuncVal <= 0 && // |-> Evaluate edge function values
+						E2.edgeFuncVal <= 0) { // |
+						// Inside triangle
+						if (x >= 0 && x < w) { // X clipping
+							if (pos === null) {
+								pos = lineOrigin + (x << 2);
+								zpos = pos >> 2;
+							}
 							
-								var zTestResult = (pz[zpos] > newZ);
-								if (zTestResult) {
-									p[pos++] = pixelColor.r;
-									p[pos++] = pixelColor.g;
-									p[pos++] = pixelColor.b;
-									p[pos++] = pixelColor.a;
-									pz[zpos++] = newZ;
-								} else {
-									// Z test is false
-									// Advance one pixel
-									pos += 4;
-									++zpos;
-								}
+							var xRatio = (x-xLeftEnd) / xLength;
+							
+							SlopeElement.interpolateSlopeElements(spanLeftEnd, spanRightEnd, xRatio, fragment);
+							var pixelColor = fragment.color;
+							var newZ = fragment.z;
+						
+							var zTestResult = (pz[zpos] > newZ);
+							if (zTestResult) {
+								p[pos++] = pixelColor.r;
+								p[pos++] = pixelColor.g;
+								p[pos++] = pixelColor.b;
+								p[pos++] = pixelColor.a;
+								pz[zpos++] = newZ;
 							} else {
-								// Out of framebuffer
+								// Z test is false
 								// Advance one pixel
 								pos += 4;
 								++zpos;
 							}
-
-						} else /* Outside triangle */ if (pos !== null) {
-							// We've reached right end!
-							break;
+						} else {
+							// Out of framebuffer
+							// Advance one pixel
+							pos += 4;
+							++zpos;
 						}
-						
-						E0.advanceX();
-						E1.advanceX();
-						E2.advanceX();
+
+					} else /* Outside triangle */ if (pos !== null) {
+						// We've reached right end!
+						break;
 					}
+					
+					E0.advanceX();
+					E1.advanceX();
+					E2.advanceX();
 				}
 				
 				E0.nextLine();
