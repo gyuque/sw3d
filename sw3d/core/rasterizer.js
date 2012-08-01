@@ -200,6 +200,10 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			if (ymin < 0) {ymin = 0;}
 			if (ymax >= h) {ymax = h-1;}
 			
+			// X clipping
+			if (xmin < 0) {xmin = 0;}
+			if (xmax >= w) {xmax = w-1;}
+			
 			// Initialize edge function value
 			E0.start(xmin, ymin);
 			E1.start(xmin, ymin);
@@ -220,37 +224,30 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 						E1.edgeFuncVal <= 0 && // |-> Evaluate edge function values
 						E2.edgeFuncVal <= 0) { // |
 						// Inside triangle
-						if (x >= 0 && x < w) { // X clipping
-							if (pos === null) {
-								pos = lineOrigin + (x << 2);
-								zpos = pos >> 2;
-							}
-							
-							var xRatio = (x-xLeftEnd) / xLength;
-							
-							SlopeElement.interpolateSlopeElements(spanLeftEnd, spanRightEnd, xRatio, fragment);
-							var pixelColor = fragment.color;
-							if (this.texture) {
-								this.textureSampler.getPixel(fragment.color, this.texture, fragment.tu, fragment.tv);
-							}
-							
-							var newZ = fragment.z;
+						if (pos === null) {
+							pos = lineOrigin + (x << 2);
+							zpos = pos >> 2;
+						}
 						
-							var zTestResult = (pz[zpos] > newZ);
-							if (zTestResult) {
-								p[pos++] = pixelColor.r;
-								p[pos++] = pixelColor.g;
-								p[pos++] = pixelColor.b;
-								p[pos++] = pixelColor.a;
-								pz[zpos++] = newZ;
-							} else {
-								// Z test is false
-								// Advance one pixel
-								pos += 4;
-								++zpos;
-							}
+						var xRatio = (x-xLeftEnd) / xLength;
+						
+						SlopeElement.interpolateSlopeElements(spanLeftEnd, spanRightEnd, xRatio, fragment);
+						var pixelColor = fragment.color;
+						if (this.texture) {
+							this.textureSampler.getPixel(fragment.color, this.texture, fragment.tu, fragment.tv);
+						}
+						
+						var newZ = fragment.z;
+					
+						var zTestResult = (pz[zpos] > newZ);
+						if (zTestResult) {
+							p[pos++] = pixelColor.r;
+							p[pos++] = pixelColor.g;
+							p[pos++] = pixelColor.b;
+							p[pos++] = pixelColor.a;
+							pz[zpos++] = newZ;
 						} else {
-							// Out of framebuffer
+							// Z test is false
 							// Advance one pixel
 							pos += 4;
 							++zpos;
