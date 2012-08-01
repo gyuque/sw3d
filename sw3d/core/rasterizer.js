@@ -35,6 +35,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		this.rightSlope = null;
 		this.allocateSlopeBuffer(this.target.height);
 		this.spanFragment = new SlopeElement();
+		this.textureFragment = new smallworld3d.RGBAColor();
 		
 	}
 	
@@ -195,6 +196,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			var pos;
 			var zpos;
 			var fragment = this.spanFragment;
+			var tex_fragment = this.textureFragment;
 			
 			// Y clipping
 			if (ymin < 0) {ymin = 0;}
@@ -216,31 +218,34 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 				
 				var lineOrigin = fbPitch * y;
 				var xLeftEnd = Math.floor(spanLeftEnd.x);
-				var xLength = Math.ceil(spanRightEnd.x + 1) - xLeftEnd;
-				pos = null;
+				var xRightEnd = Math.ceil(spanRightEnd.x + 1);
+				var xLength   = xRightEnd - xLeftEnd;
+				
+				pos = lineOrigin + (xmin << 2);
+				zpos = pos >> 2;
 				
 				for (x = xmin;x <= xmax;++x) {
 					if (E0.edgeFuncVal <= 0 && // |
 						E1.edgeFuncVal <= 0 && // |-> Evaluate edge function values
 						E2.edgeFuncVal <= 0) { // |
 						// Inside triangle
-						if (pos === null) {
-							pos = lineOrigin + (x << 2);
-							zpos = pos >> 2;
-						}
 						
 						var xRatio = (x-xLeftEnd) / xLength;
 						
 						SlopeElement.interpolateSlopeElements(spanLeftEnd, spanRightEnd, xRatio, fragment);
 						var pixelColor = fragment.color;
 						if (this.texture) {
-							this.textureSampler.getPixel(fragment.color, this.texture, fragment.tu, fragment.tv);
+							this.textureSampler.getPixel(tex_fragment, this.texture, fragment.tu, fragment.tv);
+							pixelColor.r = tex_fragment.r * pixelColor.r / 255;
+							pixelColor.g = tex_fragment.g * pixelColor.g / 255;
+							pixelColor.b = tex_fragment.b * pixelColor.b / 255;
+							pixelColor.a = tex_fragment.a * pixelColor.a / 255;
 						}
 						
 						var newZ = fragment.z;
 					
 						var zTestResult = (pz[zpos] > newZ);
-						if (zTestResult) {
+						if (zTestResult && newZ >= 0 && newZ <= 1) {
 							p[pos++] = pixelColor.r;
 							p[pos++] = pixelColor.g;
 							p[pos++] = pixelColor.b;
@@ -253,9 +258,12 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 							++zpos;
 						}
 
-					} else /* Outside triangle */ if (pos !== null) {
+					} else /* Outside triangle */  {
 						// We've reached right end!
-						break;
+						
+						// Advance one pixel
+						pos += 4;
+						++zpos;
 					}
 					
 					E0.advanceX();
