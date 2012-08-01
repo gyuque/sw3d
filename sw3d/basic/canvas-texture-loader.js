@@ -41,6 +41,9 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			for (var y = 0;y < h;y++) {
 				for (var x = 0;x < w;x++) {
 					destPixels[pos] = sourcePixels[pos++];
+					destPixels[pos] = sourcePixels[pos++];
+					destPixels[pos] = sourcePixels[pos++];
+					destPixels[pos] = sourcePixels[pos++];
 				}
 			}
 			

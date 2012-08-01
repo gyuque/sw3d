@@ -4,10 +4,9 @@
 	var SCREEN_HEIGHT = 256;
 	
 	window.launch = function() {
-		var textureLoader = new smallworld3d.CanvasTextureLoader(MIKU_MODEL_SOURCE.texture_data, function() {
-		
+		var textureLoader = new smallworld3d.CanvasTextureLoader(MIKU_MODEL_SOURCE.texture_data, function(texBuffer) {
 			theViewer = new Viewer(document.getElementById("render-target"));
-			theViewer.buildMesh(MIKU_MODEL_SOURCE);
+			theViewer.buildMesh(MIKU_MODEL_SOURCE, texBuffer);
 		
 			theViewer.observeMouse(document.body);
 		
@@ -53,7 +52,7 @@
 			this.render();
 		},
 		
-		buildMesh: function(source)  {
+		buildMesh: function(source, textureBuffer)  {
 			var mesh = new smallworld3d.Mesh();
 			
 			var i;
@@ -87,6 +86,7 @@
 				mesh.addTriangleGroup(source.groups[i]);
 			}
 			
+			mesh.setGroupMaterial(0, new smallworld3d.TexturedMaterial(textureBuffer));
 			this.mesh = mesh;
 		},
 		
@@ -104,7 +104,7 @@
 			this.mesh.doTransform(this.context);
 			
 			this.mesh.drawSubset(this.context, 0);
-			// this.mesh.drawSubset(this.context, 1);
+			this.mesh.drawSubset(this.context, 1);
 			
 			this.context.imageBuffer.emitToCanvas(this.g);
 			

@@ -49,6 +49,12 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			var len = this.groups[index] || this.getFacesCount();
 			
 			var r = renderingContext.rasterizer;
+			if (this.materials[index]) {
+				r.setTexture(this.materials[index].textureImageBuffer || null);
+			} else {
+				r.setTexture();
+			}
+			
 			var ls = this.indices;
 			var vs = this.transformedVertices;
 			for (var i = 0;i < len;i++) {
@@ -73,20 +79,20 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 					vA.position.x, vA.position.y, vA.position.z, // coordinate
 					1.0 / vA.position.w, // RHW
 					cA.r, cA.g, cA.b, cA.a,
-					0, 0);
+					vA.textureUV.u, vA.textureUV.v);
 
 				r.setVertexAttribute(1,
 					vB.position.x, vB.position.y, vB.position.z, // coordinate
 					1.0 / vB.position.w, // RHW
 //					0, (i%2) ? 255 : 0, 0, 255,
 					cB.r, cB.g, cB.b, cB.a,
-					0, 0);
+					vB.textureUV.u, vB.textureUV.v);
 
 				r.setVertexAttribute(0,
 					vC.position.x, vC.position.y, vC.position.z, // coordinate
 					1.0 / vC.position.w, // RHW
 					cC.r, cC.g, cC.b, cC.a,
-					0, 0);
+					vC.textureUV.u, vC.textureUV.v);
 					
 				r.fillTriangle();
 			}

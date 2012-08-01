@@ -6,8 +6,11 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 	function Rasterizer(imageBuffer) {
 		this.target = imageBuffer;
 		
-		// Texture sampler. Set null to use no texture.
-		this.textureSampler = null;
+		// Texture sampler. Default is nearest sampler.
+		this.textureSampler = new smallworld3d.NearestTextureSampler();
+		
+		// ImageBuffer of texture
+		this.texture = null;
 		
 		// Attributes of triangle vertices
 		this.vertexAttributes = [
@@ -32,6 +35,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		this.rightSlope = null;
 		this.allocateSlopeBuffer(this.target.height);
 		this.spanFragment = new SlopeElement();
+		
 	}
 	
 	Rasterizer.prototype = {
@@ -82,6 +86,10 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 
 			this.leftSlope = alloc();
 			this.rightSlope = alloc();
+		},
+		
+		setTexture: function(imageBuffer) {
+			this.texture = imageBuffer || null;
 		},
 		
 		setVertexAttribute: function(
@@ -222,6 +230,10 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 							
 							SlopeElement.interpolateSlopeElements(spanLeftEnd, spanRightEnd, xRatio, fragment);
 							var pixelColor = fragment.color;
+							if (this.texture) {
+								this.textureSampler.getPixel(fragment.color, this.texture, fragment.tu, fragment.tv);
+							}
+							
 							var newZ = fragment.z;
 						
 							var zTestResult = (pz[zpos] > newZ);
@@ -271,6 +283,9 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		this.color = new pkg.RGBAColor(255, 255, 255, 255);
 		this.x = 0;
 		this.z = 0;
+		this.tu = 0;
+		this.tv = 0;
+		this.rhw = 1;
 	}
 	
 	SlopeElement.interpolateSlopeElements = function(left, right, t, outElement) {
@@ -281,6 +296,9 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		
 		// Z
 		outElement.z = left.z * invT + right.z * t;
+		
+		outElement.tu = (left.tu / left.rhw) * invT + (right.tu / right.rhw) * t;
+		outElement.tv = (left.tv / left.rhw) * invT + (right.tv / right.rhw) * t;
 	};
 	
 	SlopeElement.prototype = {
@@ -295,6 +313,17 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			
 			// Z(Depth)
 			this.z = vStart.position.z * invT + vEnd.position.z * t;
+			
+			
+			var rhw1 = vStart.position.rhw;
+			var rhw2 = vEnd.position.rhw;
+			
+			// UV
+			this.tu = vStart.textureUV.u * rhw1 * invT + vEnd.textureUV.u * rhw2 * t;
+			this.tv = vStart.textureUV.v * rhw1 * invT + vEnd.textureUV.v * rhw2 * t;
+			
+			// RHW
+			this.rhw = rhw1 * invT + rhw2 * t;
 		}
 	};
 	
