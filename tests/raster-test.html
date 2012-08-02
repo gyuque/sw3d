@@ -22,8 +22,8 @@ function doTest() {
 function afterTextureLoad() {
 	var cv = document.getElementById('cv1');
 	var g = cv.getContext('2d');
-	var W = 64;
-	var H = 24;
+	var W = 70;
+	var H = 30;
 	var SCALE = 5;
 	var buf = new smallworld3d.ImageBuffer(W, H, true);
 	var r = new smallworld3d.Rasterizer(buf);
@@ -39,45 +39,64 @@ function afterTextureLoad() {
 				bB = p[pos++];
 				bA = p[pos++];
 				g.fillStyle = 'rgb('+ bR +','+ bG +','+ bB +')';
-				g.fillRect(x*SCALE, y*SCALE, SCALE-1, SCALE-1);
+				g.fillRect(x*SCALE, y*SCALE, SCALE-0, SCALE-0);
 			}
 		}
 	};
 
 	buf.clearZ(1);
-	
+	/*
 	var p1 = new smallworld3d.geometry.Vec4(3, 5, 0);
-	var p2 = new smallworld3d.geometry.Vec4(39, 2, 0);
-	var p3 = new smallworld3d.geometry.Vec4(12, 19, 0);
+	var p2 = new smallworld3d.geometry.Vec4(29.4, 2, 0);
+	var p3 = new smallworld3d.geometry.Vec4(22.2001, 59, 0);
 	var p4 = new smallworld3d.geometry.Vec4(44, 9, 0);
-	
+	*/
+/*
+	var p1 = new smallworld3d.geometry.Vec4(27,1, 0);
+	var p2 = new smallworld3d.geometry.Vec4(36,13, 0);
+	var p3 = new smallworld3d.geometry.Vec4(14,22, 0);
+	var p4 = new smallworld3d.geometry.Vec4(6.9,9, 0);
+*/
+
+	var p1 = new smallworld3d.geometry.Vec4(7,20, 0);
+	var p2 = new smallworld3d.geometry.Vec4(19,3, 0);
+	var p3 = new smallworld3d.geometry.Vec4(60,20.6, 0);
+	var p4 = new smallworld3d.geometry.Vec4(42,33, 0);
+
+
 	function drawTestTriangle(v1, v2, v3) {
 		r.setVertexAttribute(
 			0,
 			v1.x, v1.y, 0, 1,
-			155, 255, 0, 255,
+			0, 255, 0, 255,
 			0, 0);
 		
 		r.setVertexAttribute(
 			1,
 			v2.x, v2.y, 0, 1,
-			255, 155, 0, 255,
+			5, 0, 220, 255,
 			0, 0);
 
 		r.setVertexAttribute(
 			2,
 			v3.x, v3.y, 0, 1,
-			0, 155, 255, 255,
+			0, 255, 0, 255,
 			0, 0);
 			
 		r.fillTriangle();
 	}
-	
+
+	drawTestTriangle(p3, p1, p2);
+	drawTestTriangle(p4, p1, p3);
+
+	/*
 	drawTestTriangle(p1, p2, p3);
 	var p5 = new smallworld3d.geometry.Vec4(p2.x*0.8 + p3.x*0.2, p2.y*0.8 + p3.y*0.2, 0);
 	var p6 = new smallworld3d.geometry.Vec4(p2.x*0.2 + p3.x*0.8, p2.y*0.2 + p3.y*0.8, 0);
+	var p7 = new smallworld3d.geometry.Vec4(95, 24, 0);
 	drawTestTriangle(p6, p5, p4);
-
+	drawTestTriangle(p6, p4, p7);
+	*/
 //r.plotPoints();
 	buf.emitPixels();
 }

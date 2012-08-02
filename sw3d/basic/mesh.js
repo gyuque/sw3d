@@ -54,7 +54,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			} else {
 				r.setTexture();
 			}
-			
+	
 			var ls = this.indices;
 			var vs = this.transformedVertices;
 			for (var i = 0;i < len;i++) {
@@ -71,7 +71,11 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 				var cB = vB.color;
 				var cC = vC.color;
 				/*
-				if (i < 1500 || i > 1800) {
+				if (i != 2 && i != 3) {
+					console.log(" - - - -");
+					console.log(vA.position.x +","+ vA.position.y);
+					console.log(vB.position.x +","+ vB.position.y);
+					console.log(vC.position.x +","+ vC.position.y);
 					continue;
 				}
 				*/

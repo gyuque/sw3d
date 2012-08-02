@@ -104,8 +104,8 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			}
 			
 			var v = this.vertexAttributes[index];
-			v.position.x = Math.floor(x);
-			v.position.y = Math.floor(y);
+			v.position.x = x;
+			v.position.y = y;
 			v.position.z = z;
 			v.position.rhw = rhw;
 
@@ -144,14 +144,18 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			var v1 = vlist[iYmin], v2 = vlist[iYmid], v3 = vlist[iYmax];
 			var x2 = v2.position.x;
 			
-			function calcSlopeOnEdge(vStart, vEnd, slope) {
-				var y1 = vStart.position.y;
-				var y2 = vEnd.position.y;
-				var yLength = y2 - y1 + 0.5;
-
-				for (var y = y1;y <= y2;++y) {
-					var t = (y-y1+0.5) / yLength;
+			function calcSlopeOnEdge(vStart, vEnd, slope, isRightEnd) {
+				var y1f = vStart.position.y;
+				var y2f = vEnd.position.y;
+				var yLength = y2f - y1f;
+				var y1 = Math.floor(y1f + 0.5);
+				var y2 = Math.floor(y2f + 0.5);
+			//	console.log(yLength)
+				var shift = 0;
 				
+				for (var y = y1;y < y2;++y) {
+					var t = (y+0.5-y1f+shift) / yLength;
+					//console.log("  "+t)
 					if (slope[y]) {
 						// Interpolate vertex attributes.
 						// For example, vertex colors will generate a gradient.
@@ -172,16 +176,16 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 				// |> Long edge is on left.
 				// Left: v1-v3
 				// Right: v1-v2-v3
-				calcSlopeOnEdge(v1, v3, this.leftSlope);
-				calcSlopeOnEdge(v1, v2, this.rightSlope);
-				calcSlopeOnEdge(v2, v3, this.rightSlope);
+				calcSlopeOnEdge(v1, v3, this.leftSlope, false);
+				calcSlopeOnEdge(v1, v2, this.rightSlope, true);
+				calcSlopeOnEdge(v2, v3, this.rightSlope, true);
 			} else {
 				// <| Long edge is on right.
 				// Left: v1-v2-v3
 				// Right: v1-v3
-				calcSlopeOnEdge(v1, v2, this.leftSlope);
-				calcSlopeOnEdge(v2, v3, this.leftSlope);
-				calcSlopeOnEdge(v1, v3, this.rightSlope);
+				calcSlopeOnEdge(v1, v2, this.leftSlope, false);
+				calcSlopeOnEdge(v2, v3, this.leftSlope, false);
+				calcSlopeOnEdge(v1, v3, this.rightSlope, true);
 			}
 		},
 		
@@ -198,6 +202,12 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			var fragment = this.spanFragment;
 			var tex_fragment = this.textureFragment;
 			
+			// to integer
+			ymin = Math.floor(ymin + 0.5);
+			ymax = Math.ceil(ymax + 0.5);
+			xmin = Math.floor(xmin + 0.5);
+			xmax = Math.ceil(xmax + 0.5);
+			
 			// Y clipping
 			if (ymin < 0) {ymin = 0;}
 			if (ymax >= h) {ymax = h-1;}
@@ -212,54 +222,76 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			E2.start(xmin, ymin);
 			
 			// Scan over the bounding box of target triangle
-			for (y = ymin;y <= ymax;++y) {
+			for (y = ymin;y < ymax;++y) {
 				var spanLeftEnd = this.leftSlope[y];
 				var spanRightEnd = this.rightSlope[y];
 				
 				var lineOrigin = fbPitch * y;
-				var xLeftEnd = Math.floor(spanLeftEnd.x);
-				var xRightEnd = Math.ceil(spanRightEnd.x + 1);
+				var xLeftEnd = Math.floor(spanLeftEnd.x + 0.5);
+				var xRightEnd = Math.ceil(spanRightEnd.x + 0.5);
 				var xLength   = xRightEnd - xLeftEnd;
 				
-				pos = lineOrigin + (xmin << 2);
-				zpos = pos >> 2;
+				
+				var spanLength = 0;
 				
 				for (x = xmin;x <= xmax;++x) {
 					if (E0.edgeFuncVal <= 0 && // |
 						E1.edgeFuncVal <= 0 && // |-> Evaluate edge function values
 						E2.edgeFuncVal <= 0) { // |
 						// Inside triangle
-						
+						++spanLength;
+						/*
+						//var xRatio = 0;
 						var xRatio = (x-xLeftEnd) / xLength;
 						
+						if (xRatio<0 || xRatio>1) {
+							console.log(y, x, xLeftEnd,spanLeftEnd.x);
+							console.log("** "+xRatio)}
 						SlopeElement.interpolateSlopeElements(spanLeftEnd, spanRightEnd, xRatio, fragment);
-						var pixelColor = fragment.color;
-						if (this.texture) {
-							this.textureSampler.getPixel(tex_fragment, this.texture, fragment.tu, fragment.tv);
-							pixelColor.r = tex_fragment.r * pixelColor.r / 255;
-							pixelColor.g = tex_fragment.g * pixelColor.g / 255;
-							pixelColor.b = tex_fragment.b * pixelColor.b / 255;
-							pixelColor.a = tex_fragment.a * pixelColor.a / 255;
-						}
-						
-						var newZ = fragment.z;
-					
-						var zTestResult = (pz[zpos] > newZ);
-						if (zTestResult && newZ >= 0 && newZ <= 1) {
-							p[pos++] = pixelColor.r;
-							p[pos++] = pixelColor.g;
-							p[pos++] = pixelColor.b;
-							p[pos++] = pixelColor.a;
-							pz[zpos++] = newZ;
-						} else {
-							// Z test is false
-							// Advance one pixel
-							pos += 4;
-							++zpos;
-						}
 
+						
+*/
 					} else /* Outside triangle */  {
-						// We've reached right end!
+						if (spanLength) { 
+							// We've reached right end!
+							pos = lineOrigin + ((x - spanLength) << 2);
+							zpos = pos >> 2;
+							for (x = 0;x < spanLength;x++) {
+								var xRatio = x / spanLength;
+								SlopeElement.interpolateSlopeElements(spanLeftEnd, spanRightEnd, xRatio, fragment);
+								var pixelColor = fragment.color;
+								if (this.texture) {
+									// Blend with texel color
+									this.textureSampler.getPixel(tex_fragment, this.texture, fragment.tu, fragment.tv);
+									pixelColor.r = tex_fragment.r * pixelColor.r / 255;
+									pixelColor.g = tex_fragment.g * pixelColor.g / 255;
+									pixelColor.b = tex_fragment.b * pixelColor.b / 255;
+									pixelColor.a = tex_fragment.a * pixelColor.a / 255;
+								}
+
+								// Depth(Z) Test
+								var newZ = fragment.z;
+								var zTestResult = (pz[zpos] > newZ);
+
+								//zTestResult = true;
+								//pixelColor.r = pixelColor.g = pixelColor.b = pixelColor.a = 255;
+								if (zTestResult && newZ >= 0 && newZ <= 1) {
+									p[pos++] = pixelColor.r;
+									p[pos++] = pixelColor.g;
+									p[pos++] = pixelColor.b;
+									p[pos++] = pixelColor.a;
+									pz[zpos++] = newZ;
+								} else {
+									// Z test is false
+									// Advance one pixel
+									pos += 4;
+									++zpos;
+								}
+
+							}
+							
+							break;
+						}
 						
 						// Advance one pixel
 						pos += 4;
