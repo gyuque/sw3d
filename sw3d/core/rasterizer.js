@@ -259,8 +259,6 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 								var newZ = fragment.z;
 								var zTestResult = (pz[zpos] > newZ);
 
-								//zTestResult = true;
-								//pixelColor.r = pixelColor.g = pixelColor.b = pixelColor.a = 255;
 								if (zTestResult && newZ >= 0 && newZ <= 1) {
 									p[pos++] = pixelColor.r;
 									p[pos++] = pixelColor.g;
