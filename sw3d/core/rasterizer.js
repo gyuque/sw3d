@@ -144,18 +144,15 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			var v1 = vlist[iYmin], v2 = vlist[iYmid], v3 = vlist[iYmax];
 			var x2 = v2.position.x;
 			
-			function calcSlopeOnEdge(vStart, vEnd, slope, isRightEnd) {
+			function calcSlopeOnEdge(vStart, vEnd, slope) {
 				var y1f = vStart.position.y;
 				var y2f = vEnd.position.y;
 				var yLength = y2f - y1f;
 				var y1 = Math.floor(y1f + 0.5);
 				var y2 = Math.floor(y2f + 0.5);
-			//	console.log(yLength)
-				var shift = 0;
 				
 				for (var y = y1;y < y2;++y) {
-					var t = (y+0.5-y1f+shift) / yLength;
-					//console.log("  "+t)
+					var t = (y+0.5-y1f) / yLength;
 					if (slope[y]) {
 						// Interpolate vertex attributes.
 						// For example, vertex colors will generate a gradient.
@@ -176,16 +173,16 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 				// |> Long edge is on left.
 				// Left: v1-v3
 				// Right: v1-v2-v3
-				calcSlopeOnEdge(v1, v3, this.leftSlope, false);
-				calcSlopeOnEdge(v1, v2, this.rightSlope, true);
-				calcSlopeOnEdge(v2, v3, this.rightSlope, true);
+				calcSlopeOnEdge(v1, v3, this.leftSlope);
+				calcSlopeOnEdge(v1, v2, this.rightSlope);
+				calcSlopeOnEdge(v2, v3, this.rightSlope);
 			} else {
 				// <| Long edge is on right.
 				// Left: v1-v2-v3
 				// Right: v1-v3
-				calcSlopeOnEdge(v1, v2, this.leftSlope, false);
-				calcSlopeOnEdge(v2, v3, this.leftSlope, false);
-				calcSlopeOnEdge(v1, v3, this.rightSlope, true);
+				calcSlopeOnEdge(v1, v2, this.leftSlope);
+				calcSlopeOnEdge(v2, v3, this.leftSlope);
+				calcSlopeOnEdge(v1, v3, this.rightSlope);
 			}
 		},
 		
@@ -210,11 +207,11 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			
 			// Y clipping
 			if (ymin < 0) {ymin = 0;}
-			if (ymax >= h) {ymax = h-1;}
+			if (ymax > h) {ymax = h;}
 			
 			// X clipping
 			if (xmin < 0) {xmin = 0;}
-			if (xmax >= w) {xmax = w-1;}
+			if (xmax > w) {xmax = w;}
 			
 			// Initialize edge function value
 			E0.start(xmin, ymin);
@@ -234,23 +231,12 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 				
 				var spanLength = 0;
 				
-				for (x = xmin;x <= xmax;++x) {
+				for (x = xmin;x < xmax;++x) {
 					if (E0.edgeFuncVal <= 0 && // |
 						E1.edgeFuncVal <= 0 && // |-> Evaluate edge function values
 						E2.edgeFuncVal <= 0) { // |
 						// Inside triangle
 						++spanLength;
-						/*
-						//var xRatio = 0;
-						var xRatio = (x-xLeftEnd) / xLength;
-						
-						if (xRatio<0 || xRatio>1) {
-							console.log(y, x, xLeftEnd,spanLeftEnd.x);
-							console.log("** "+xRatio)}
-						SlopeElement.interpolateSlopeElements(spanLeftEnd, spanRightEnd, xRatio, fragment);
-
-						
-*/
 					} else /* Outside triangle */  {
 						if (spanLength) { 
 							// We've reached right end!
@@ -292,10 +278,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 							
 							break;
 						}
-						
-						// Advance one pixel
-						pos += 4;
-						++zpos;
+						// else: left side of triangle...
 					}
 					
 					E0.advanceX();
