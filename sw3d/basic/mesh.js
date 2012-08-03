@@ -52,6 +52,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			if (this.materials[index]) {
 				r.setTexture(this.materials[index].textureImageBuffer || null);
 			} else {
+				// Render without texture
 				r.setTexture();
 			}
 	
@@ -70,16 +71,8 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 				var cA = vA.color;
 				var cB = vB.color;
 				var cC = vC.color;
-				/*
-				if (i != 2 && i != 3) {
-					console.log(" - - - -");
-					console.log(vA.position.x +","+ vA.position.y);
-					console.log(vB.position.x +","+ vB.position.y);
-					console.log(vC.position.x +","+ vC.position.y);
-					continue;
-				}
-				*/
-				r.setVertexAttribute(2,
+				
+				r.setVertexAttribute(0,
 					vA.position.x, vA.position.y, vA.position.z, // coordinate
 					1.0 / vA.position.w, // RHW
 					cA.r, cA.g, cA.b, cA.a,
@@ -88,11 +81,10 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 				r.setVertexAttribute(1,
 					vB.position.x, vB.position.y, vB.position.z, // coordinate
 					1.0 / vB.position.w, // RHW
-//					0, (i%2) ? 255 : 0, 0, 255,
 					cB.r, cB.g, cB.b, cB.a,
 					vB.textureUV.u, vB.textureUV.v);
 
-				r.setVertexAttribute(0,
+				r.setVertexAttribute(2,
 					vC.position.x, vC.position.y, vC.position.z, // coordinate
 					1.0 / vC.position.w, // RHW
 					cC.r, cC.g, cC.b, cC.a,

@@ -113,10 +113,15 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 	
 	function DirectionalLight() {
 		this.direction = new smallworld3d.geometry.Vec4(0, -1, 0);
+		this.enabled = true;
 	}
 	
 	DirectionalLight.prototype = {
 		applyOnVertex: function(v) {
+			if (!this.enabled) {
+				return;
+			}
+			
 			var c = v.color;
 			var dp = 0.5 - this.direction.dp3(v.N) * 0.5;
 

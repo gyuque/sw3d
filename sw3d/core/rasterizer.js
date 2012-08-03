@@ -3,6 +3,9 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 (function(pkg) {
 	'use strict';
 
+	/**
+	 * Polygon Rasterizer
+	 */
 	function Rasterizer(imageBuffer) {
 		this.target = imageBuffer;
 		
@@ -30,7 +33,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		//  for flat shading
 		this.flatConstantColor = null;
 		
-		//  for gouraud shading
+		//  for interpolation
 		this.leftSlope = null;
 		this.rightSlope = null;
 		this.allocateSlopeBuffer(this.target.height);
@@ -40,6 +43,9 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 	}
 	
 	Rasterizer.prototype = {
+		/**
+		 * Render a filled triangle using current vertex attributes.
+		 */
 		fillTriangle: function() {
 			var vlist = this.vertexAttributes;
 			var v1 = vlist[0], v2 = vlist[1], v3 = vlist[2];
@@ -74,25 +80,17 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			this.scan(vlist[ix1].position.x, vlist[iy1].position.y,
 				      vlist[ix3].position.x, vlist[iy3].position.y);
 		},
-		
-		allocateSlopeBuffer: function(h) {
-			function alloc() {
-				var b = new Array(h);
-				for (var i = 0;i < h;i++) {
-					b[i] = new SlopeElement();
-				}
-				
-				return b;
-			}
 
-			this.leftSlope = alloc();
-			this.rightSlope = alloc();
-		},
-		
+		/**
+		 * Set current texure.
+		 */
 		setTexture: function(imageBuffer) {
 			this.texture = imageBuffer || null;
 		},
 		
+		/**
+		 * Set vertex attribute on specified vertex.
+		 */
 		setVertexAttribute: function(
 			index,
 			x, y, z, rhw,
@@ -122,6 +120,20 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			this.putOneVertex(this.vertexAttributes[0]);
 			this.putOneVertex(this.vertexAttributes[1]);
 			this.putOneVertex(this.vertexAttributes[2]);
+		},
+		
+		allocateSlopeBuffer: function(h) {
+			function alloc() {
+				var b = new Array(h);
+				for (var i = 0;i < h;i++) {
+					b[i] = new SlopeElement();
+				}
+				
+				return b;
+			}
+
+			this.leftSlope = alloc();
+			this.rightSlope = alloc();
 		},
 		
 		putOneVertex: function(v) {
@@ -191,7 +203,6 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			
 			var x, y;
 			var w = this.target.width, h = this.target.height;
-			var fbPitch = w << 2;
 			var p = this.target.color;
 			var pz = this.target.z;
 			var pos;
@@ -219,11 +230,11 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			E2.start(xmin, ymin);
 			
 			// Scan over the bounding box of target triangle
+			var lineOrigin = w * ymin;
 			for (y = ymin;y < ymax;++y) {
 				var spanLeftEnd = this.leftSlope[y];
 				var spanRightEnd = this.rightSlope[y];
 				
-				var lineOrigin = fbPitch * y;
 				var xLeftEnd = Math.floor(spanLeftEnd.x + 0.5);
 				var xRightEnd = Math.ceil(spanRightEnd.x + 0.5);
 				var xLength   = xRightEnd - xLeftEnd;
@@ -231,17 +242,18 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 				
 				var spanLength = 0;
 				
-				for (x = xmin;x < xmax;++x) {
+				for (x = xmin;x <= xmax;++x) {
 					if (E0.edgeFuncVal <= 0 && // |
 						E1.edgeFuncVal <= 0 && // |-> Evaluate edge function values
-						E2.edgeFuncVal <= 0) { // |
+						E2.edgeFuncVal <= 0 && // |
+						x < xmax) { // -------------> Reached right end of framebuffer?
 						// Inside triangle
 						++spanLength;
 					} else /* Outside triangle */  {
 						if (spanLength) { 
 							// We've reached right end!
-							pos = lineOrigin + ((x - spanLength) << 2);
-							zpos = pos >> 2;
+							zpos = lineOrigin + (x - spanLength);
+							pos = zpos << 2;
 							for (x = 0;x < spanLength;x++) {
 								var xRatio = x / spanLength;
 								SlopeElement.interpolateSlopeElements(spanLeftEnd, spanRightEnd, xRatio, fragment);
@@ -287,6 +299,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 				E0.nextLine();
 				E1.nextLine();
 				E2.nextLine();
+				lineOrigin += w;
 			}
 		}
 	};
@@ -375,6 +388,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			this.y = y1 ;
 			this.dx = x2 - x1;
 			this.dy = y2 - y1;
+			this.dy2 = this.dy * 2; // cache dy*2
 		},
 		
 		start: function(sx, sy) {
@@ -395,8 +409,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		// Update edge function value
 		advanceX: function() {
 			// Set E(x+1, y)
-			this.edgeFuncVal += this.dy;
-			this.edgeFuncVal += this.dy;
+			this.edgeFuncVal += this.dy2;
 		},
 		
 		nextLine: function() {

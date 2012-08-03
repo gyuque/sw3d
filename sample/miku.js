@@ -1,12 +1,12 @@
 (function(){
 	var theViewer = null;
-	var SCREEN_WIDTH  = 256;
-	var SCREEN_HEIGHT = 256;
+	var SCREEN_WIDTH  = 256*2;
+	var SCREEN_HEIGHT = 256*2;
 	
 	window.launch = function() {
 		var textureLoader = new smallworld3d.CanvasTextureLoader(MIKU_MODEL_SOURCE.texture_data, function(texBuffer) {
 			theViewer = new Viewer(document.getElementById("render-target"));
-			theViewer.buildMesh(MIKU_MODEL_SOURCE, texBuffer);
+			theViewer.buildMesh(MIKU_MODEL_SOURCE, texBuffer, true);
 		
 			theViewer.observeMouse(document.body);
 		
@@ -17,6 +17,7 @@
 	function Viewer(targetCanvas) {
 		this.rotation = {
 			y: 0,
+			x: 0,
 			mX: new smallworld3d.geometry.M44(),
 			mY: new smallworld3d.geometry.M44()
 		};
@@ -31,11 +32,14 @@
 
 		var directionalLight = new smallworld3d.DirectionalLight();
 		directionalLight.direction.x = 1;
+		directionalLight.direction.z = -0.5;
 		directionalLight.direction.normalize3();
 		this.context.addLight(directionalLight);
 
 		this.context.projectionTransform.perspectiveFOV(Math.PI/3.0, SCREEN_WIDTH / SCREEN_HEIGHT, 1, 30);
 		this.context.viewTransform.translate(0, -7, -14);
+		
+		directionalLight.enabled = false;
 	}
 	
 	Viewer.prototype = {
@@ -47,12 +51,14 @@
 		},
 		
 		onMouseMove: function(e) {
-			var rx = (e.clientX + 100) * 0.01;
-			this.rotation.y = rx;
+			var x = (e.clientX + 100) * 0.01;
+			var y = (e.clientY - 100) * 0.002;
+			this.rotation.y = x;
+			this.rotation.x = -0.1 + y;
 			this.render();
 		},
 		
-		buildMesh: function(source, textureBuffer)  {
+		buildMesh: function(source, textureBuffer, invertZ)  {
 			var mesh = new smallworld3d.Mesh();
 			
 			var i;
@@ -65,9 +71,17 @@
 				v.position.x = vSource.p[0];
 				v.position.y = vSource.p[1];
 				v.position.z = vSource.p[2];
+				
 				v.N.x = vSource.n[0];
 				v.N.y = vSource.n[1];
 				v.N.z = vSource.n[2];
+
+				// Invert Z for DirectX mesh data
+				if (invertZ) {
+					v.position.z *= -1;
+					v.N.z *= -1;
+				}
+
 				if (vSource.uv) {
 					v.textureUV.u = vSource.uv[0];
 					v.textureUV.v = vSource.uv[1];
@@ -91,13 +105,10 @@
 		},
 		
 		render: function() {
-//			window.ZZZ = 0;
-//			this.rotation.y = 3.27;
-			
 			this.context.imageBuffer.clearZ(1);
 			this.context.imageBuffer.clearColor(0, 0, 0);
 			
-			this.rotation.mX.rotationX(0.1);
+			this.rotation.mX.rotationX(this.rotation.x);
 			this.rotation.mY.rotationY(this.rotation.y);
 			
 			this.context.worldTransform.mul(this.rotation.mX, this.rotation.mY);
@@ -107,7 +118,6 @@
 			this.mesh.drawSubset(this.context, 1);
 			
 			this.context.imageBuffer.emitToCanvas(this.g);
-			
 		}
 		
 	};
