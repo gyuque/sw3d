@@ -124,10 +124,15 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		}
 	};
 	
+	function crossproduct2(x1, y1, x2, y2) {
+		return x1 * y2 - y1 * x2;
+	}
+	
 	// ---- Export ----
 	pkg.geometry = {
 		Vec2: Vec2,
 		Vec4: Vec4,
-		M44: M44
+		M44: M44,
+		crossproduct2: crossproduct2
 	};
 })(window.smallworld3d);

@@ -18,10 +18,13 @@
 		this.rotation = {
 			y: 0,
 			x: 0,
+			toY: 0,
+			toX: 0,
 			mX: new smallworld3d.geometry.M44(),
 			mY: new smallworld3d.geometry.M44()
 		};
 		
+		this.viewIsMoving = false;
 		this.canvas = targetCanvas;
 		this.canvas.width  = SCREEN_WIDTH;
 		this.canvas.height = SCREEN_HEIGHT;
@@ -53,9 +56,39 @@
 		onMouseMove: function(e) {
 			var x = (e.clientX + 100) * 0.01;
 			var y = (e.clientY - 100) * 0.002;
-			this.rotation.y = x;
-			this.rotation.x = -0.2 + y;
+			this.rotation.toY = x;
+			this.rotation.toX = -0.2 + y;
+			
+			if (!this.viewIsMoving) {
+				this.moveView();
+			}
+		},
+		
+		moveView: function() {
+			var e = 0.001;
+			var dx = this.rotation.toX - this.rotation.x;
+			var dy = this.rotation.toY - this.rotation.y;
+			this.viewIsMoving = false;
+			
+			if (dx < -e || dx > e) {
+				dx *= 0.7;
+				this.viewIsMoving = true;
+			}
+
+			if (dy < -e || dy > e) {
+				dy *= 0.7;
+				this.viewIsMoving = true;
+			}
+			
+			this.rotation.x += dx;
+			this.rotation.y += dy;
+			
 			this.render();
+			
+			if (this.viewIsMoving) {
+				var _this = this;
+				setTimeout(function(){_this.moveView();}, 10);
+			}
 		},
 		
 		buildMesh: function(source, textureBuffer, invertZ)  {

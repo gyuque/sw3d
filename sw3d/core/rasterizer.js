@@ -49,6 +49,10 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		fillTriangle: function() {
 			var vlist = this.vertexAttributes;
 			var v1 = vlist[0], v2 = vlist[1], v3 = vlist[2];
+			if (this.cullTest(v1.position, v2.position, v3.position) < 0) {
+				return;
+			}
+			
 			var x1 = v1.position.x, y1 = v1.position.y;
 			var x2 = v2.position.x, y2 = v2.position.y;
 			var x3 = v3.position.x, y3 = v3.position.y;
@@ -120,6 +124,10 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			this.putOneVertex(this.vertexAttributes[0]);
 			this.putOneVertex(this.vertexAttributes[1]);
 			this.putOneVertex(this.vertexAttributes[2]);
+		},
+		
+		cullTest: function(v1, v2, v3) {
+			return smallworld3d.geometry.crossproduct2(v2.x - v1.x, v2.y - v1.y, v3.x - v2.x, v3.y - v2.y);
 		},
 		
 		allocateSlopeBuffer: function(h) {
