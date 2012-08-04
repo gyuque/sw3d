@@ -337,6 +337,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		// Z
 		outElement.z = left.z * invT + right.z * t;
 		
+		// Texture Coordinates
 		outElement.tu = (left.tu / left.rhw) * invT + (right.tu / right.rhw) * t;
 		outElement.tv = (left.tv / left.rhw) * invT + (right.tv / right.rhw) * t;
 	};
@@ -358,7 +359,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			var rhw1 = vStart.position.rhw;
 			var rhw2 = vEnd.position.rhw;
 			
-			// UV
+			// Texture Coordinates
 			this.tu = vStart.textureUV.u * rhw1 * invT + vEnd.textureUV.u * rhw2 * t;
 			this.tv = vStart.textureUV.v * rhw1 * invT + vEnd.textureUV.v * rhw2 * t;
 			

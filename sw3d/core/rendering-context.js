@@ -27,10 +27,16 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 	}
 	
 	RenderingContext.prototype = {
+		/**
+		 * Set new viewport.
+		 */
 		setViewport: function(vp) {
 			this.viewport = vp;
 		},
 		
+		/**
+		 * Transform vertices in specifeid list using current transform settings.
+		 */
 		transformVertices: function(outBuffer, inBuffer) {
 			this.updateTransforms();
 			var mAll = this.combinedTransforms.worldViewProjection;
