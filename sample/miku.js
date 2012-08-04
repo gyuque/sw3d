@@ -1,14 +1,14 @@
 (function(){
 	var theViewer = null;
-	var SCREEN_WIDTH  = 520;
-	var SCREEN_HEIGHT = 360;
+	var SCREEN_WIDTH  = 300;
+	var SCREEN_HEIGHT = 300;
 	
 	window.launch = function() {
 		var textureLoader = new smallworld3d.CanvasTextureLoader(MIKU_MODEL_SOURCE.texture_data, function(texBuffer) {
 			theViewer = new Viewer(document.getElementById("render-target"));
 			theViewer.buildMesh(MIKU_MODEL_SOURCE, texBuffer, true);
 		
-			theViewer.observeMouse(document.body);
+			theViewer.observeMouse(document.body.parentNode);
 		
 			theViewer.render();
 		});
@@ -37,7 +37,7 @@
 		this.context.addLight(directionalLight);
 
 		this.context.projectionTransform.perspectiveFOV(Math.PI/3.0, SCREEN_WIDTH / SCREEN_HEIGHT, 1, 30);
-		this.context.viewTransform.translate(0, -7, -14);
+		this.context.viewTransform.translate(0, -6, -12);
 		
 		directionalLight.enabled = false;
 	}
@@ -54,7 +54,7 @@
 			var x = (e.clientX + 100) * 0.01;
 			var y = (e.clientY - 100) * 0.002;
 			this.rotation.y = x;
-			this.rotation.x = -0.1 + y;
+			this.rotation.x = -0.2 + y;
 			this.render();
 		},
 		
@@ -112,7 +112,7 @@
 		
 		render: function() {
 			this.context.imageBuffer.clearZ(1);
-			this.context.imageBuffer.clearColor(0, 0, 0);
+			this.context.imageBuffer.clearColor(190, 190, 190);
 			
 			this.rotation.mX.rotationX(this.rotation.x);
 			this.rotation.mY.rotationY(this.rotation.y);
