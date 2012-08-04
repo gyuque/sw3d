@@ -252,6 +252,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 					} else /* Outside triangle */  {
 						if (spanLength) { 
 							// We've reached right end!
+							
 							zpos = lineOrigin + (x - spanLength);
 							pos = zpos << 2;
 							for (x = 0;x < spanLength;x++) {
@@ -259,8 +260,10 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 								SlopeElement.interpolateSlopeElements(spanLeftEnd, spanRightEnd, xRatio, fragment);
 								var pixelColor = fragment.color;
 								if (this.texture) {
-									// Blend with texel color
+									// Fetch a texel from texture
 									this.textureSampler.getPixel(tex_fragment, this.texture, fragment.tu, fragment.tv);
+
+									// Blend with vertex color
 									pixelColor.r = tex_fragment.r * pixelColor.r / 255;
 									pixelColor.g = tex_fragment.g * pixelColor.g / 255;
 									pixelColor.b = tex_fragment.b * pixelColor.b / 255;
@@ -272,6 +275,12 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 								var zTestResult = (pz[zpos] > newZ);
 
 								if (zTestResult && newZ >= 0 && newZ <= 1) {
+									if (pixelColor.a < 255) { // This framgent is not opaque
+										// Do alpha blending
+										blendColorDirect(pixelColor, pixelColor, 
+											p[pos],p[pos+1],p[pos+2],p[pos+3], pixelColor.a / 255); 
+									}
+									
 									p[pos++] = pixelColor.r;
 									p[pos++] = pixelColor.g;
 									p[pos++] = pixelColor.b;
@@ -365,6 +374,15 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		outColor.g = (c1.g * alpha1 + c2.g * alpha2) >> 0;
 		outColor.b = (c1.b * alpha1 + c2.b * alpha2) >> 0;
 		outColor.a = (c1.a * alpha1 + c2.a * alpha2) >> 0;
+	}
+
+	function blendColorDirect(outColor, c1, r,g,b,a, alpha1) {
+		var alpha2 = 1.0 - alpha1;
+		
+		outColor.r = (c1.r * alpha1 + r * alpha2) >> 0;
+		outColor.g = (c1.g * alpha1 + g * alpha2) >> 0;
+		outColor.b = (c1.b * alpha1 + b * alpha2) >> 0;
+		outColor.a = (c1.a * alpha1 + a * alpha2) >> 0;
 	}
 	
 	// PolygonEdge object provides edge function

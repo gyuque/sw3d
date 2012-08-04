@@ -1,7 +1,7 @@
 (function(){
 	var theViewer = null;
-	var SCREEN_WIDTH  = 256*2;
-	var SCREEN_HEIGHT = 256*2;
+	var SCREEN_WIDTH  = 520;
+	var SCREEN_HEIGHT = 360;
 	
 	window.launch = function() {
 		var textureLoader = new smallworld3d.CanvasTextureLoader(MIKU_MODEL_SOURCE.texture_data, function(texBuffer) {
@@ -60,6 +60,7 @@
 		
 		buildMesh: function(source, textureBuffer, invertZ)  {
 			var mesh = new smallworld3d.Mesh();
+			var faceColor = new smallworld3d.RGBAColor(255, 255, 255, 255);
 			
 			var i;
 			var vlist = source.vertices;
@@ -75,6 +76,11 @@
 				v.N.x = vSource.n[0];
 				v.N.y = vSource.n[1];
 				v.N.z = vSource.n[2];
+				
+				v.color.r = faceColor.r;
+				v.color.g = faceColor.g;
+				v.color.b = faceColor.b;
+				v.color.a = faceColor.a;
 
 				// Invert Z for DirectX mesh data
 				if (invertZ) {
