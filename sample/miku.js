@@ -1,7 +1,7 @@
 (function(){
 	var theViewer = null;
-	var SCREEN_WIDTH  = 300;
-	var SCREEN_HEIGHT = 300;
+	var SCREEN_WIDTH  = 320;
+	var SCREEN_HEIGHT = 320;
 	
 	window.launch = function() {
 		var textureLoader = new smallworld3d.CanvasTextureLoader(MIKU_MODEL_SOURCE.texture_data, function(texBuffer) {
