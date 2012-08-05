@@ -50,13 +50,13 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			var source = this.color;
 			var pos = 0;
 			
-			for (var y = 0;y < h;y++) {
-				for (var x = 0;x < w;x++) {
-					dest[pos]   = source[pos++];
-					dest[pos]   = source[pos++];
-					dest[pos]   = source[pos++];
-					dest[pos++] = 255;
-				}
+			var len = w * h;
+			
+			for (var i = 0;i < len;++i) {
+				dest[pos]   = source[pos++];
+				dest[pos]   = source[pos++];
+				dest[pos]   = source[pos++];
+				dest[pos++] = 255;
 			}
 			
 			context2d.putImageData(imageData, 0, 0);

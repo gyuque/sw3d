@@ -232,10 +232,14 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			if (xmin < 0) {xmin = 0;}
 			if (xmax > w) {xmax = w;}
 			
-			// Initialize edge function value
-			E0.start(xmin, ymin);
-			E1.start(xmin, ymin);
-			E2.start(xmin, ymin);
+			// Initialize edge function values
+			var e0 = E0.start(xmin, ymin);
+			var e1 = E1.start(xmin, ymin);
+			var e2 = E2.start(xmin, ymin);
+
+			var edx0 = E0.getStep();
+			var edx1 = E1.getStep();
+			var edx2 = E2.getStep();
 			
 			// Scan over the bounding box of target triangle
 			var lineOrigin = w * ymin;
@@ -248,14 +252,11 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 				var xLength   = xRightEnd - xLeftEnd;
 				var spanLength = 0;
 				
-				var e0 = E0.edgeFuncVal;
-				var e1 = E1.edgeFuncVal;
-				var e2 = E2.edgeFuncVal;
 				
 				for (x = xmin;x <= xmax;++x) {
-					if (E0.edgeFuncVal <= 0 && // |
-						E1.edgeFuncVal <= 0 && // |-> Evaluate edge function values
-						E2.edgeFuncVal <= 0 && // |
+					if (e0 <= 0 && // |
+						e1 <= 0 && // |-> Evaluate edge function values
+						e2 <= 0 && // |
 						x < xmax) { // -------------> Reached right end of framebuffer?
 						// Inside triangle
 						++spanLength;
@@ -313,14 +314,15 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 						// else: left side of triangle...
 					}
 					
-					E0.advanceX();
-					E1.advanceX();
-					E2.advanceX();
+					// Update edge function values
+					e0 += edx0;
+					e1 += edx1;
+					e2 += edx2;
 				}
 				
-				E0.nextLine();
-				E1.nextLine();
-				E2.nextLine();
+				e0 = E0.nextLine();
+				e1 = E1.nextLine();
+				e2 = E2.nextLine();
 				lineOrigin += w;
 			}
 		}
@@ -438,10 +440,8 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			return this.edgeFuncVal;
 		},
 		
-		// Update edge function value
-		advanceX: function() {
-			// Set E(x+1, y)
-			this.edgeFuncVal += this.dy2;
+		getStep: function() {
+			return this.dy2;
 		},
 		
 		nextLine: function() {
@@ -449,6 +449,8 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			this.edgeFuncValLeft -= this.dx;
 			this.edgeFuncValLeft -= this.dx;
 			this.edgeFuncVal = this.edgeFuncValLeft;
+			
+			return this.edgeFuncVal;
 		}
 	};
 	
