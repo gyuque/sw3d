@@ -39,7 +39,6 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		this.allocateSlopeBuffer(this.target.height);
 		this.spanFragment = new SlopeElement();
 		this.textureFragment = new smallworld3d.RGBAColor();
-		
 	}
 	
 	Rasterizer.prototype = {
@@ -49,6 +48,8 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		fillTriangle: function() {
 			var vlist = this.vertexAttributes;
 			var v1 = vlist[0], v2 = vlist[1], v3 = vlist[2];
+			
+			// Culling
 			if (this.cullTest(v1.position, v2.position, v3.position) < 0) {
 				return;
 			}
