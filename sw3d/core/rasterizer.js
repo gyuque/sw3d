@@ -246,9 +246,11 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 				var xLeftEnd = Math.floor(spanLeftEnd.x + 0.5);
 				var xRightEnd = Math.ceil(spanRightEnd.x + 0.5);
 				var xLength   = xRightEnd - xLeftEnd;
-				
-				
 				var spanLength = 0;
+				
+				var e0 = E0.edgeFuncVal;
+				var e1 = E1.edgeFuncVal;
+				var e2 = E2.edgeFuncVal;
 				
 				for (x = xmin;x <= xmax;++x) {
 					if (E0.edgeFuncVal <= 0 && // |
@@ -260,29 +262,32 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 					} else /* Outside triangle */  {
 						if (spanLength) { 
 							// We've reached right end!
+							var xOffset = (x - spanLength) - xLeftEnd;
 							
 							zpos = lineOrigin + (x - spanLength);
 							pos = zpos << 2;
 							for (x = 0;x < spanLength;x++) {
-								var xRatio = x / spanLength;
+								var xRatio = (x+xOffset) / xLength;
 								SlopeElement.interpolateSlopeElements(spanLeftEnd, spanRightEnd, xRatio, fragment);
-								var pixelColor = fragment.color;
-								if (this.texture) {
-									// Fetch a texel from texture
-									this.textureSampler.getPixel(tex_fragment, this.texture, fragment.tu, fragment.tv);
-
-									// Blend with vertex color
-									pixelColor.r = tex_fragment.r * pixelColor.r / 255;
-									pixelColor.g = tex_fragment.g * pixelColor.g / 255;
-									pixelColor.b = tex_fragment.b * pixelColor.b / 255;
-									pixelColor.a = tex_fragment.a * pixelColor.a / 255;
-								}
 
 								// Depth(Z) Test
 								var newZ = fragment.z;
 								var zTestResult = (pz[zpos] > newZ);
 
 								if (zTestResult && newZ >= 0 && newZ <= 1) {
+									var pixelColor = fragment.color;
+									
+									if (this.texture) {
+										// Fetch a texel from texture
+										this.textureSampler.getPixel(tex_fragment, this.texture, fragment.tu, fragment.tv);
+
+										// Blend with vertex color
+										pixelColor.r = tex_fragment.r * pixelColor.r / 255;
+										pixelColor.g = tex_fragment.g * pixelColor.g / 255;
+										pixelColor.b = tex_fragment.b * pixelColor.b / 255;
+										pixelColor.a = tex_fragment.a * pixelColor.a / 255;
+									}
+
 									if (pixelColor.a < 255) { // This framgent is not opaque
 										// Do alpha blending
 										blendColorDirect(pixelColor, pixelColor, 
