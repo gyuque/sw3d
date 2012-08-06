@@ -24,6 +24,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		};
 		
 		this.lights = [];
+		this.customVertexShader = null;
 	}
 	
 	RenderingContext.prototype = {
@@ -41,27 +42,32 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			this.updateTransforms();
 			var mAll = this.combinedTransforms.worldViewProjection;
 			var mRot = this.worldTransform;
+			var shader = this.customVertexShader;
 			
 			var len = inBuffer.length;
 			for (var i = 0;i < len;i++) {
 				var v_in = inBuffer[i];
 				var v_out = outBuffer[i];
 				
-				var p_in = v_in.position;
-				var n_in = v_in.N;
-				var p_out = v_out.position;
+				if (shader) {
+					shader(this, v_out, v_in);
+				} else {
+					var p_in = v_in.position;
+					var n_in = v_in.N;
+					var p_out = v_out.position;
 				
-				mAll.transformVec3(p_out, p_in.x, p_in.y, p_in.z);
-				mRot.transformVec3WithoutTranslation(v_out.N, n_in.x, n_in.y, n_in.z);
-				v_out.N.normalize3();
+					mAll.transformVec3(p_out, p_in.x, p_in.y, p_in.z);
+					mRot.transformVec3WithoutTranslation(v_out.N, n_in.x, n_in.y, n_in.z);
+					v_out.N.normalize3();
 				
-				p_out.x /= p_out.w;
-				p_out.y /= p_out.w;
-				p_out.z /= p_out.w;
+					p_out.x /= p_out.w;
+					p_out.y /= p_out.w;
+					p_out.z /= p_out.w;
 				
-				v_out.color.copyFrom(v_in.color);
-				v_out.textureUV.u = v_in.textureUV.u;
-				v_out.textureUV.v = v_in.textureUV.v;
+					v_out.color.copyFrom(v_in.color);
+					v_out.textureUV.u = v_in.textureUV.u;
+					v_out.textureUV.v = v_in.textureUV.v;
+				}
 			}
 			
 			this.applyAllLights(outBuffer);
