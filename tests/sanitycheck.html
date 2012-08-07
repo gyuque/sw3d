@@ -1,13 +1,22 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <script type="text/javascript" src="../sw3d/core/types.js"></script>
+<script type="text/javascript" src="../sw3d/core/imagebuffer.js"></script>
 <script type="text/javascript" src="../sw3d/core/geometry-core.js"></script>
 <script type="text/javascript" src="../sw3d/core/rasterizer.js"></script>
+<script type="text/javascript" src="../sw3d/core/nearest-texture-sampler.js"></script>
+<script type="text/javascript" src="../sw3d/extra/spherical-harmonics.js"></script>
+
+<script type="text/javascript" src="./sh-tester.js"></script>
+
 <script type="text/javascript">
 function doTest() {
 	console.log(smallworld3d);
-	var r = new smallworld3d.Rasterizer(32, 18);
+	var buf = new smallworld3d.ImageBuffer(32, 18);
+	var r = new smallworld3d.Rasterizer(buf);
 	console.log(r);
+	
+	testSH();
 }
 </script>
 <title>SmallWorld3D sanity check</title>
