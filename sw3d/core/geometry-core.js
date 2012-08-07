@@ -20,6 +20,42 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 	}
 	
 	Vec4.prototype = {
+		copyFrom: function(copySource) {
+			this.x = copySource.x;
+			this.y = copySource.y;
+			this.z = copySource.z;
+			this.w = copySource.w;
+			
+			return this;
+		},
+
+		add: function(v) {
+			this.x += v.x;
+			this.y += v.y;
+			this.z += v.z;
+			this.w += v.w;
+			
+			return this;
+		},
+		
+		sub: function(v) {
+			this.x -= v.x;
+			this.y -= v.y;
+			this.z -= v.z;
+			this.w -= v.w;
+			
+			return this;
+		},
+		
+		mul: function(k) {
+			this.x *= k;
+			this.y *= k;
+			this.z *= k;
+			this.w *= k;
+			
+			return this;
+		},
+		
 		// dot product ignoring w
 		dp3: function(v)	{
 			return this.x*v.x + this.y*v.y + this.z*v.z;

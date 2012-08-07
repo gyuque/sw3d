@@ -1,4 +1,6 @@
 (function(){
+	var gUsePRT = false;
+	var gLightSwitcher = null;
 	var theViewer = null;
 	var SCREEN_WIDTH  = 300;
 	var SCREEN_HEIGHT = 300;
@@ -7,18 +9,33 @@
 		var shcoeffs = null;
 		
 		if (window.PRTData) {
+			gUsePRT = true;
 			shcoeffs = decodeSHCoefficients(PRTData);
 		}
 		
 		var textureLoader = new smallworld3d.CanvasTextureLoader(MIKU_MODEL_SOURCE.texture_data, function(texBuffer) {
 			theViewer = new Viewer(document.getElementById("render-target"));
 			theViewer.buildMesh(MIKU_MODEL_SOURCE, texBuffer, true, shcoeffs);
-			if (shcoeffs) {
-				theViewer.context.customVertexShader = SHPRTVertexShader;
+			if (gUsePRT) {
+				theViewer.context.technique = {
+					setupTransform: SHPRTSetup,
+					vertexShader: SHPRTVertexShader
+				};
 			}
 		
 			theViewer.observeMouse(document.body.parentNode);
-		
+			
+			if (gUsePRT) {
+				gLightSwitcher = new LightSwitcher(["btn-light1", "btn-light2", "btn-light3"], function(){
+					var selectedLight = gLightSwitcher.list[gLightSwitcher.selectedIndex];
+					theViewer.setLightDirection(selectedLight.direction);
+				});
+				gLightSwitcher.setLightDirection(0,  2, -1, -1, 6);
+				gLightSwitcher.setLightDirection(1, -.5, -2, -1, 4);
+				gLightSwitcher.setLightDirection(2, -1, -0.2, 0.6, 10);
+				gLightSwitcher.selectIndex(0);
+			}
+			
 			theViewer.render();
 		});
 	};
@@ -33,6 +50,8 @@
 			mY: new smallworld3d.geometry.M44()
 		};
 		
+		this.toLightDirection = new smallworld3d.geometry.Vec4();
+		this.lightMoveVec = new smallworld3d.geometry.Vec4();
 		this.viewIsMoving = false;
 		this.canvas = targetCanvas;
 		this.canvas.width  = SCREEN_WIDTH;
@@ -44,13 +63,14 @@
 
 		var directionalLight = new smallworld3d.DirectionalLight();
 		directionalLight.direction.x = 2;
-		directionalLight.direction.z = -2.5;
+		directionalLight.direction.y = -1;
+		directionalLight.direction.z = -1;
 		directionalLight.direction.normalize3();
 		this.context.addLight(directionalLight);
 		this.directionalLight = directionalLight;
 
 		this.context.projectionTransform.perspectiveFOV(Math.PI/3.0, SCREEN_WIDTH / SCREEN_HEIGHT, 1, 30);
-		this.context.viewTransform.translate(0, -6, -12);
+		this.context.viewTransform.translate(0, -6, gUsePRT ? -20 : -13);
 		
 		directionalLight.enabled = false;
 	}
@@ -67,8 +87,15 @@
 			var x = (e.clientX + 100) * 0.01;
 			var y = (e.clientY - 100) * 0.002;
 			this.rotation.toY = x;
-			this.rotation.toX = -0.2 + y;
+			this.rotation.toX = (gUsePRT ? 0 : -0.2) + y;
 			
+			if (!this.viewIsMoving) {
+				this.moveView();
+			}
+		},
+		
+		setLightDirection: function(v) {
+			this.toLightDirection.copyFrom(v);
 			if (!this.viewIsMoving) {
 				this.moveView();
 			}
@@ -93,11 +120,29 @@
 			this.rotation.x += dx;
 			this.rotation.y += dy;
 			
+			if (this.moveLight()) {
+				this.viewIsMoving = true;
+			}
+			
 			this.render();
 			
 			if (this.viewIsMoving) {
 				var _this = this;
 				setTimeout(function(){_this.moveView();}, 10);
+			}
+		},
+		
+		moveLight: function() {
+			this.lightMoveVec.copyFrom(this.toLightDirection).sub(this.directionalLight.direction);
+			var len = this.lightMoveVec.norm3();
+			if (len < 0.01) {
+				this.directionalLight.direction.copyFrom(this.toLightDirection);
+				return false;
+			} else {
+				this.lightMoveVec.mul(0.3);
+				this.directionalLight.direction.add(this.lightMoveVec);
+				this.directionalLight.direction.w = this.directionalLight.direction.w * 0.4 + this.toLightDirection.w * 0.6;
+				return true;
 			}
 		},
 		
@@ -158,11 +203,7 @@
 		},
 		
 		render: function() {
-			var clearIntensity = 190;
-			if (this.context.customVertexShader) {
-				this.setupSHPRT();
-				clearIntensity = 100;
-			}
+			var clearIntensity = gUsePRT ? 100 : 190;
 
 			this.context.imageBuffer.clearZ(1);
 			this.context.imageBuffer.clearColor(clearIntensity, clearIntensity, clearIntensity);
@@ -177,34 +218,46 @@
 			this.mesh.drawSubset(this.context, 1);
 			
 			this.context.imageBuffer.emitToCanvas(this.g);
-		},
-		
-		setupSHPRT: function() {
-			var L = this.directionalLight.direction;
-			var theta = -Math.acos(L.z);
-			var phi = Math.atan(L.y / L.x);
-			
-			var coeffs = smallworld3d.SphericalHarmonics.projectVector(9, theta, phi, 0.49, 5, this.context.lightSHCoefficients);
-			this.context.lightSHCoefficients = coeffs;
 		}
 		
 	};
 	
+	var rotLVec = null;
+	var invRot = null;
+	var lightSHCoefficients;
+	function SHPRTSetup(renderingContext) {
+		if (!invRot) {
+			invRot = new smallworld3d.geometry.M44();
+			rotLVec = new smallworld3d.geometry.Vec4();
+		}
+
+		var mRot = renderingContext.worldTransform;
+		var L0 = renderingContext.lights[0].direction;
+		invRot.makeTransposed(mRot);
+		invRot.transformVec3WithoutTranslation(rotLVec, L0.x, L0.y, L0.z);
+
+		var theta = -Math.acos(rotLVec.z);
+		var phi = Math.atan2(rotLVec.y, rotLVec.x);
+		
+		var coeffs = smallworld3d.SphericalHarmonics.projectVector(L0.w, theta, phi, 0.49, 5, lightSHCoefficients);
+		coeffs.vector[0] += 1.5; // Ambient Light
+		lightSHCoefficients = coeffs;
+	}
+	
 	function SHPRTVertexShader(renderingContext, v_out, v_in) {
 		var mAll = renderingContext.combinedTransforms.worldViewProjection;
-		var mRot = renderingContext.worldTransform;
 
 		var p_in = v_in.position;
 		var n_in = v_in.N;
 		var p_out = v_out.position;
 	
 		mAll.transformVec3(p_out, p_in.x, p_in.y, p_in.z);
-		mRot.transformVec3WithoutTranslation(v_out.N, n_in.x, n_in.y, n_in.z);
+		//mRot.transformVec3WithoutTranslation(v_out.N, n_in.x, n_in.y, n_in.z);
 		v_out.N.normalize3();
 	
-		var shdotR = smallworld3d.SHCoefficients.dot(renderingContext.lightSHCoefficients, v_in.shCoefficients.R);
-		var shdotG = smallworld3d.SHCoefficients.dot(renderingContext.lightSHCoefficients, v_in.shCoefficients.G);
-		var shdotB = smallworld3d.SHCoefficients.dot(renderingContext.lightSHCoefficients, v_in.shCoefficients.B);
+		var shdotR = smallworld3d.SHCoefficients.dot(lightSHCoefficients, v_in.shCoefficients.R);
+		var shdotG = smallworld3d.SHCoefficients.dot(lightSHCoefficients, v_in.shCoefficients.G);
+		var shdotB = smallworld3d.SHCoefficients.dot(lightSHCoefficients, v_in.shCoefficients.B);
 
 		p_out.x /= p_out.w;
 		p_out.y /= p_out.w;
@@ -257,4 +310,48 @@
 		
 		return outList;
 	}
+	
+	function LightSwitcher(idList, callback) {
+		var _this = this;
+		this.list = [];
+		this.selectedIndex = 0;
+		this.callback = callback;
+		
+		function setHandler(target, index) {
+			target.addEventListener("click", function(){_this.selectIndex(index);}, false);
+		}
+		
+		for (var i = 0;i < idList.length;i++) {
+			var btn = document.getElementById(idList[i]);
+			this.list.push({
+				index: i,
+				button: btn
+			})
+			
+			setHandler(btn, i);
+		}
+	}
+	
+	LightSwitcher.prototype = {
+		reset: function() {
+			for (var i = 0;i < this.list.length;i++) {
+				this.list[i].button.disabled = false;
+			}
+		},
+		
+		setLightDirection: function(index, x, y, z, radiance) {
+			this.list[index].direction = (new smallworld3d.geometry.Vec4(x, y, z, radiance)).normalize3();
+		},
+		
+		selectIndex: function(index) {
+			this.reset();
+			
+			var item = this.list[index];
+			item.button.disabled = true;
+			this.selectedIndex = index;
+			if (this.callback) {
+				this.callback(this);
+			}
+		}
+	};
 })();

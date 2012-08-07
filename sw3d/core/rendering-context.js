@@ -24,7 +24,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		};
 		
 		this.lights = [];
-		this.customVertexShader = null;
+		this.technique = null;
 	}
 	
 	RenderingContext.prototype = {
@@ -42,7 +42,11 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			this.updateTransforms();
 			var mAll = this.combinedTransforms.worldViewProjection;
 			var mRot = this.worldTransform;
-			var shader = this.customVertexShader;
+			var shader = this.technique ? this.technique.vertexShader : null;
+			
+			if (this.technique && this.technique.setupTransform) {
+				this.technique.setupTransform(this);
+			}
 			
 			var len = inBuffer.length;
 			for (var i = 0;i < len;i++) {
