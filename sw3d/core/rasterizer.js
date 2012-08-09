@@ -10,10 +10,13 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		this.target = imageBuffer;
 		
 		// Texture sampler. Default is nearest sampler.
-		this.textureSampler = new smallworld3d.NearestTextureSampler();
+		this.textureSampler = smallworld3d.NearestTextureSampler ? new smallworld3d.NearestTextureSampler() : null;
 		
 		// ImageBuffer of texture
 		this.texture = null;
+		
+		// Z-test enabled?
+		this.enableZTest = true;
 		
 		// Attributes of triangle vertices
 		this.vertexAttributes = [
@@ -117,8 +120,8 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			v.color.b = b;
 			v.color.a = a;
 			
-			v.textureUV.u = tu;
-			v.textureUV.v = tv;
+			v.textureUV.u = tu || 0;
+			v.textureUV.v = tv || 0;
 		},
 		
 		plotPoints: function() {
@@ -219,6 +222,8 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			var fragment = this.spanFragment;
 			var tex_fragment = this.textureFragment;
 			
+			var zAlwaysPass = !this.enableZTest;
+			
 			// to integer
 			ymin = Math.floor(ymin + 0.5);
 			ymax = Math.ceil(ymax + 0.5);
@@ -274,7 +279,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 
 								// Depth(Z) Test
 								var newZ = fragment.z;
-								var zTestResult = (pz[zpos] > newZ);
+								var zTestResult = zAlwaysPass || (pz[zpos] > newZ);
 
 								if (zTestResult && newZ >= 0 && newZ <= 1) {
 									var pixelColor = fragment.color;
