@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<head>
+	<title>SmallWorld3D</title>
+	<link href="css/sw3d.css" rel="stylesheet" type="text/css">
+</head>
+<body>
+	<h1><img src="images/sw3dlogo.png" alt="SmallWorld3D"></h1>
+	<p class="lead">The White Box of 3D Programming</p>
+	<h2>About</h2>
+	<p>SmallWorld3D is an educational realtime 3DCG library. Entire system including polygon rasterizer is written in short javascript.</p>
+	<table class="motto">
+		<tr>
+			<td class="bbox"><em> No </em><del>Blackbox Hardware</del></td>
+			<td class="bbox"><em> No </em><del>Proprietary Library</del></td>
+			<td class="wbox"><em> Only </em>Pure Javascript</td>
+		</tr>
+	</table>
+	
+	<h2>Download</h2>
+	Please download zip or pull from <a href="https://github.com/gyuque/sw3d">Github</a>
+	<h2>Getting Started</h2>
+	
+	<p>Step 1: Create framebuffer and rasterizer.</p>
+	<pre>
+	framebuffer = new smallworld3d.ImageBuffer(300, 300, true);
+	rasterizer = new smallworld3d.Rasterizer(framebuffer);
+	rasterizer.enableZTest = false;</pre>
+	
+	<p>Step 2: Draw a polygon.</p>
+	<pre>
+	rasterizer.setVertexAttribute(0,
+			10, 10, 0, 1,
+			255, 0, 0, 255);
+
+	rasterizer.setVertexAttribute(1,
+			290, 20, 0, 1,
+			0, 255, 0, 255);
+
+	rasterizer.setVertexAttribute(2,
+			80, 290, 0, 1,
+			0, 0, 255, 255);
+			
+	rasterizer.fillTriangle();</pre>
+	
+	<p>Step 3: Output.</p>
+	<pre>
+	framebuffer.emitToCanvas(g); // g is a 2d context of canvas</pre>
+	<p>
+		You'll get:<br>
+		<img src="images/start-polygon.png" alt="output">
+	</p>
+	
+	<h2>Demonstrations</h2>
+
+	<table class="demos">
+		<tr>
+			<td><a href=" "><img alt="Screenshot1" src="images/swdemo0.png"><br>Simple Polygon</a></td>
+			<td><a href=" "><img alt="Screenshot2" src="images/swdemo1.png"><br>Miku Model</a></td>
+			<td><a href=" "><img alt="Screenshot3" src="images/swdemo2.png"><br>SH PRT</a></td>
+		</tr>
+	</table>
+
+	<address>ushiroad</address>
+</body>

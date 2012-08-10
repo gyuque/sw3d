@@ -1,0 +1,100 @@
+body {
+	margin-left: 10%;
+	margin-right: 10%;
+}
+
+h1 {
+	text-align: center;
+	margin-bottom: 0;
+	padding-bottom: 0;
+}
+
+p.lead {
+	margin-top: -20px;
+	padding-top: 0;
+	text-align: center;
+	color: #999;
+	font-size: 14px;
+	font-family: Arial, sans-serif;
+	font-weight: bold;
+}
+
+h2 {
+	font-family: Arial, sans-serif;
+	font-size: 150%;
+	color: #555;
+}
+
+.motto,
+.demos {
+	margin-left: auto;
+	margin-right: auto;
+	font-size: 90%;
+}
+
+.motto td,
+.demos td {
+	padding-left: 1em;
+	padding-right: 1em;
+}
+
+.motto .bbox {
+	background: url("../images/bbox56.png") center center no-repeat;
+	color: #888;
+}
+
+.motto .bbox em,
+.motto .wbox em {
+	display: block;
+	padding-bottom: 52px;
+	text-align: center;
+	font-family: "Comic Sans MS";
+	font-style: normal;
+	font-weight: normal;
+}
+
+.motto .wbox {
+	background: url("../images/wbox56.png") center center no-repeat;
+	color: #000;
+	font-weight: bold;
+}
+
+.demos img {
+	border-radius: 4px;
+	box-shadow: 0 1px 4px #888;
+	border: 1px solid #fff;
+
+	transition: box-shadow 0.3s;
+	-o-transition: box-shadow 0.3s;
+	-ms-transition: box-shadow 0.3s;
+	-moz-transition: box-shadow 0.3s;
+	-webkit-transition: box-shadow 0.3s;
+}
+
+.demos a:hover img {
+	box-shadow: 0 1px 4px #888, 0 0 6px 1px #27f;
+}
+
+.demos td {
+	text-align: center;
+}
+
+.demos td a {
+	text-decoration: none;
+	color: #26b;
+}
+
+address {
+	border-top: 1px solid #eee;
+	font-style: normal;
+	color: #888;
+	text-align: center;
+	box-shadow: 0 -1px 0 #bbb;
+	margin-top: 1em;
+}
+
+pre {
+	background-color: #eee;
+	font-size: 90%;
+	padding: 0.5em;
+}
