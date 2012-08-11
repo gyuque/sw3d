@@ -66,6 +66,14 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			return this.x*v.x + this.y*v.y + this.z*v.z + this.w*v.w;
 		},
 		
+		// cross product ignoring w
+		cp3: function(v, w) {
+			this.x = (v.y * w.z) - (v.z * w.y);
+			this.y = (v.z * w.x) - (v.x * w.z);
+			this.z = (v.x * w.y) - (v.y * w.x);
+			return this;
+		},
+		
 		// norm of (x, y, z)
 		norm3: function() {
 			return Math.sqrt(this.x*this.x + this.y*this.y + this.z*this.z);

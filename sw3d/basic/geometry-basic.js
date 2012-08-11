@@ -57,5 +57,32 @@
 		return this;
 	};
 	
-
+	var vTmp1 = new pkg.geometry.Vec4();
+	var vTmp2 = new pkg.geometry.Vec4();
+	var vTmp3 = new pkg.geometry.Vec4();
+	M44.prototype.lookAt = function(vFrom, vTo, vUp) {
+		// Make Z basis
+		var z = vTmp1.copyFrom(vFrom).sub(vTo).normalize3();
+		if (z.norm3() === 0) { z.z = 1; }
+		
+		// Make X basis
+		var x = vTmp2.cp3(vUp, z).normalize3();
+		if (x.norm3() === 0) {
+			z.x += 0.0001;
+			x.cp3(vUp, z).normalize3();
+		}
+		
+		// Make Y basis
+		var y = vTmp3.cp3(z, x);
+		
+		// Set *transposed* basis
+		this._11 = x.x; this._21 = y.x; this._31 = z.x;
+		this._12 = x.y; this._22 = y.y; this._32 = z.y;
+		this._13 = x.z; this._23 = y.z; this._33 = z.z;
+		this._41 = this._42 = this._43 = 0; this._44 =  1;
+		
+		this._14 = -(vFrom.x * x.x + vFrom.y * x.y + vFrom.z * x.z);
+		this._24 = -(vFrom.x * y.x + vFrom.y * y.y + vFrom.z * y.z);
+		this._34 = -(vFrom.x * z.x + vFrom.y * z.y + vFrom.z * z.z);
+	};
 })(window.smallworld3d);
