@@ -4,7 +4,9 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 	'use strict';
 
 	/**
-	 * Polygon Rasterizer
+	 * @class Polygon Rasterizer
+	 * @property {ImageBuffer} texture ImageBuffer object used as texture
+	 * @property {boolean} enableZTest Set true to do z-test while drawing
 	 */
 	function Rasterizer(imageBuffer) {
 		this.target = imageBuffer;
