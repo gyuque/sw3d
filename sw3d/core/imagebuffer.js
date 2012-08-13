@@ -12,12 +12,14 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		this.z = withZBuffer ? this.allocateBuffer(w, h, 'depth') : null;
 	}
 	
+
+	
 	ImageBuffer.prototype = {
 		allocateBuffer: function(w, h, bufferType) {
 			if (bufferType == 'depth') {
-				return new Float64Array(w*h);
+				return allocateTypedArray(true, w*h);
 			} else {
-				return new Uint8Array(w*4 *h);
+				return allocateTypedArray(false, w*4 *h);
 			}
 		},
 
@@ -62,6 +64,25 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			context2d.putImageData(imageData, 0, 0);
 		}
 	};
+
+	function allocateTypedArray(isFloat, length) {
+		var a = null;
+		
+		// Try to allocate typed array
+		try {
+			var ctor = isFloat ? Float64Array : Uint8Array;
+			a = new ctor(length);
+		} catch(e) {}
+		
+		// Fallback to standard array
+		if (!a) {
+			console.log("WARNING: This environment does not support TypedArray.");
+			a = new Array(length);
+			for (var i = 0;i < length;i++) { a[i] = 0; }
+		}
+		
+		return a;
+	}
 	
 	pkg.ImageBuffer = ImageBuffer;
 })(window.smallworld3d);
