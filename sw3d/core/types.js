@@ -31,10 +31,15 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 	 * @class Texture uv coordinate
 	 * @property {Number} u U component
 	 * @property {Number} v V component
+	 * @property {Number} s Additional S component
+	 * @property {Number} t Additional T component
 	 */
 	function UVCoordinate(_u, _v) {
 		this.u = _u || 0;
 		this.v = _v || 0;
+
+		this.s = 0;
+		this.t = 0;
 	}
 	
 	/**

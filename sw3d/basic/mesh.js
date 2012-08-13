@@ -42,14 +42,17 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			renderingContext.applyViewportTransform(this.transformedVertices);
 		},
 		
-		drawSubset: function(renderingContext, index) {
+		drawSubset: function(renderingContext, index, overrideTexture) {
 			var startIndex = (index == 0) ? 0 : this.groups[index - 1];
 			
 			// Number of faces in this group
 			var len = this.groups[index] || this.getFacesCount();
 			
 			var r = renderingContext.rasterizer;
-			if (this.materials[index]) {
+			if (overrideTexture) {
+				// Use specified texture, ignoring orignal one.
+				r.setTexture(overrideTexture);
+			} else if (this.materials[index]) {
 				r.setTexture(this.materials[index].textureImageBuffer || null);
 			} else {
 				// Render without texture
@@ -76,19 +79,19 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 					vA.position.x, vA.position.y, vA.position.z, // coordinate
 					1.0 / vA.position.w, // RHW
 					cA.r, cA.g, cA.b, cA.a,
-					vA.textureUV.u, vA.textureUV.v);
+					vA.textureUV.u, vA.textureUV.v, vA.textureUV.s, vA.textureUV.t);
 
 				r.setVertexAttribute(1,
 					vB.position.x, vB.position.y, vB.position.z, // coordinate
 					1.0 / vB.position.w, // RHW
 					cB.r, cB.g, cB.b, cB.a,
-					vB.textureUV.u, vB.textureUV.v);
+					vB.textureUV.u, vB.textureUV.v, vB.textureUV.s, vB.textureUV.t);
 
 				r.setVertexAttribute(2,
 					vC.position.x, vC.position.y, vC.position.z, // coordinate
 					1.0 / vC.position.w, // RHW
 					cC.r, cC.g, cC.b, cC.a,
-					vC.textureUV.u, vC.textureUV.v);
+					vC.textureUV.u, vC.textureUV.v, vC.textureUV.s, vC.textureUV.t);
 					
 				r.fillTriangle();
 			}

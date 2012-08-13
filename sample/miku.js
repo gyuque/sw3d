@@ -1,9 +1,11 @@
 (function(){
 	var gUsePRT = false;
+	var gUseShadowMap = !!window.SHADOW_MAP_DEMO;
 	var gLightSwitcher = null;
 	var theViewer = null;
 	var SCREEN_WIDTH  = 300;
 	var SCREEN_HEIGHT = 300;
+	var gShadowPreviewCanvasContext = null;
 	
 	window.launch = function() {
 		var shcoeffs = null;
@@ -11,6 +13,15 @@
 		if (window.PRTData) {
 			gUsePRT = true;
 			shcoeffs = decodeSHCoefficients(PRTData);
+		}
+		
+		if (gUseShadowMap) {
+			var cv_s = document.getElementById("shadow-preview");
+			if (cv_s) {
+				cv_s.width = SCREEN_WIDTH;
+				cv_s.height = SCREEN_HEIGHT;
+				gShadowPreviewCanvasContext = cv_s.getContext("2d");
+			}
 		}
 		
 		var textureLoader = new smallworld3d.CanvasTextureLoader(MIKU_MODEL_SOURCE.texture_data, function(texBuffer) {
@@ -68,6 +79,7 @@
 		directionalLight.direction.normalize3();
 		this.context.addLight(directionalLight);
 		this.directionalLight = directionalLight;
+		this.toLightDirection.copyFrom(directionalLight.direction);
 
 		this.context.projectionTransform.perspectiveFOV(Math.PI/3.0, SCREEN_WIDTH / SCREEN_HEIGHT, 1, 30);
 		this.context.viewTransform.translate(0, -6, gUsePRT ? -20 : -13);
@@ -203,23 +215,79 @@
 		},
 		
 		render: function() {
+			this.rotation.mX.rotationX(this.rotation.x);
+			this.rotation.mY.rotationY(this.rotation.y);
+			this.context.worldTransform.mul(this.rotation.mX, this.rotation.mY);
+
+			if (gUseShadowMap) {
+				this.renderShadowTexture();
+			}
+			
 			var clearIntensity = gUsePRT ? 100 : 190;
 
+			// ----------------------------------
+			// Main pass
+			this.context.beginPass();
 			this.context.imageBuffer.clearZ(1);
 			this.context.imageBuffer.clearColor(clearIntensity, clearIntensity, clearIntensity);
 			
-			this.rotation.mX.rotationX(this.rotation.x);
-			this.rotation.mY.rotationY(this.rotation.y);
-			
-			this.context.worldTransform.mul(this.rotation.mX, this.rotation.mY);
 			this.mesh.doTransform(this.context);
 			
 			this.mesh.drawSubset(this.context, 0);
 			this.mesh.drawSubset(this.context, 1);
-			
+			this.context.endPass();
+			// ----------------------------------
+
+			if (gUseShadowMap) {
+				this.drawShadows();
+			}
+
 			this.context.imageBuffer.emitToCanvas(this.g);
-		}
+		},
 		
+		renderShadowTexture: function() {
+			var L0 = this.context.lights[0].direction;
+			ShadowMappingTechnique.setLightDirection(L0);
+			
+			// Replace with shadow mapping technique
+			var oldTechnique = this.context.technique;
+			this.context.technique = ShadowMappingTechnique.pass0;
+			
+			this.context.beginPass();
+			this.context.imageBuffer.clearZ(1);
+			this.context.imageBuffer.clearColor(0, 0, 0);
+			this.mesh.doTransform(this.context);
+
+			this.mesh.drawSubset(this.context, 0);
+			this.mesh.drawSubset(this.context, 1);
+			
+			this.context.endPass();
+			
+			// Restore saved technique
+			this.context.technique = oldTechnique;
+			
+			if (gShadowPreviewCanvasContext) {
+				ShadowMappingTechnique.shadowTexture.emitToCanvas(gShadowPreviewCanvasContext);
+			}
+		},
+		
+		drawShadows: function() {
+			// Replace with shadow mapping technique
+			var oldTechnique = this.context.technique;
+			this.context.technique = ShadowMappingTechnique.pass2;
+
+			this.context.beginPass();
+//			this.context.imageBuffer.clearZ(1);
+			this.mesh.doTransform(this.context);
+
+//			this.mesh.drawSubset(this.context, 0);
+			this.mesh.drawSubset(this.context, 1);
+
+			this.context.endPass();
+
+			// Restore saved technique
+			this.context.technique = oldTechnique;
+		}
 	};
 	
 	var rotLVec = null;
@@ -354,4 +422,164 @@
 			}
 		}
 	};
+	
+	// +------------------------------------------------------
+	// | Shadow mapping technique
+	// +------------------------------------------------------
+	
+	var ShadowMappingTechnique = (function() {
+		var shadowTexture = new smallworld3d.ImageBuffer(SCREEN_WIDTH, SCREEN_HEIGHT, true);
+		var lightDirection= new smallworld3d.geometry.Vec4(0, 0, 0);
+		var lightPosition = new smallworld3d.geometry.Vec4(0, 0, 0);
+		var lightTarget   = new smallworld3d.geometry.Vec4(0, 0, 0);
+		var lightUp       = new smallworld3d.geometry.Vec4(0, 1, 0);
+		var transformP0   = new smallworld3d.geometry.M44();
+		var shaderTempV   = new smallworld3d.geometry.Vec4();
+
+		var savedStates = {
+			renderTarget: null,
+			culling: 0,
+			projectionTransform: new smallworld3d.geometry.M44(),
+			viewTransform: new smallworld3d.geometry.M44()
+		};
+		
+		var pass0 = {
+			beginPass: function(renderingContext) {
+				// Save states
+				savedStates.renderTarget = renderingContext.replaceRenderTarget(shadowTexture);
+				savedStates.viewTransform.copyFrom(renderingContext.viewTransform);
+				savedStates.projectionTransform.copyFrom(renderingContext.projectionTransform);
+				savedStates.culling = renderingContext.rasterizer.culling;
+				
+				// Setup special states for shadow texture
+				renderingContext.viewTransform.lookAt(lightPosition, lightTarget, lightUp);
+				renderingContext.projectionTransform.perspectiveFOV(Math.PI/2, SCREEN_WIDTH / SCREEN_HEIGHT, 1, 28);
+				renderingContext.rasterizer.culling = smallworld3d.Rasterizer.REVERSE_CULLING;
+			},
+		
+			setupTransform: function(renderingContext) {
+			//	console.log(renderingContext)
+			//	throw 1;
+				transformP0.copyFrom(renderingContext.combinedTransforms.worldViewProjection);
+			},
+
+			vertexShader: function(renderingContext, v_out, v_in) {
+				var mAll = renderingContext.combinedTransforms.worldViewProjection;
+
+				var p_in = v_in.position;
+				var p_out = v_out.position;
+
+				mAll.transformVec3(p_out, p_in.x, p_in.y, p_in.z);
+				
+
+				// Set NON w-divided positions 
+				v_out.textureUV.u = p_out.z;
+				v_out.textureUV.v = p_out.w;
+
+				p_out.x /= p_out.w;
+				p_out.y /= p_out.w;
+				p_out.z /= p_out.w;
+			},
+
+			pixelShader: function(ps_out, ps_in) {
+				var outColor = ps_out.color;
+
+				ps_out.z = ps_in.tu / ps_in.tv;
+				outColor.a = 0;
+			},
+			
+			endPass: function(renderingContext) {
+				// Restore states
+				renderingContext.replaceRenderTarget(savedStates.renderTarget);
+				renderingContext.viewTransform.copyFrom(savedStates.viewTransform);
+				renderingContext.projectionTransform.copyFrom(savedStates.projectionTransform);
+				renderingContext.rasterizer.culling = savedStates.culling;
+			}
+		};
+		
+		var sampler, tex;
+		var pass2 = {
+			beginPass: function(renderingContext) {
+				var r = renderingContext.rasterizer;
+				tex = shadowTexture;
+				sampler = r.textureSampler;
+			},
+
+			endPass: function(renderingContext) {
+			},
+			
+			vertexShader: function(renderingContext, v_out, v_in) {
+				var mAll = renderingContext.combinedTransforms.worldViewProjection;
+				var mRot = renderingContext.worldTransform;
+
+				var p_in = v_in.position;
+				var p_out = v_out.position;
+				var n_in = v_in.N;
+				
+				// Transform with current transform
+				mAll.transformVec3(p_out, p_in.x, p_in.y, p_in.z);
+				mRot.transformVec3WithoutTranslation(v_out.N, n_in.x, n_in.y, n_in.z);
+				v_out.N.normalize3();
+				
+				p_out.x /= p_out.w;
+				p_out.y /= p_out.w;
+				p_out.z /= p_out.w;
+				p_out.z -= 0.001;
+
+				v_out.color.r = 255;
+				v_out.color.g = 255;
+				v_out.color.b = 255;
+				v_out.color.a = 255;
+				
+				// Transform with matrices used in pass 0
+				var tp = shaderTempV;
+				transformP0.transformVec3(tp, p_in.x, p_in.y, p_in.z);
+				tp.x /= tp.w;
+				tp.y /= tp.w;
+
+				tp.x = 0.5 + 0.5 * tp.x;
+				tp.y = 0.5 - 0.5 * tp.y;
+
+				var dp = lightDirection.dp3(v_out.N);
+				if (dp > 0) {
+					v_out.textureUV.s = 1;
+					v_out.textureUV.t = 1;
+				} else {
+					v_out.textureUV.s = tp.z;
+					v_out.textureUV.t = tp.w;
+				}
+
+				v_out.textureUV.u = tp.x;
+				v_out.textureUV.v = tp.y;
+			},
+			
+			pixelShader: function(ps_out, ps_in) {
+				var shadowDepth = sampler.getPixelDepth(tex, ps_in.tu, ps_in.tv) + 0.001;
+				var targetDepth = ps_in.ts / ps_in.tt;
+				
+				var a = (shadowDepth < targetDepth) ? 90 : 0;
+				
+				var outColor = ps_out.color;
+				outColor.r = 0;
+				outColor.g = 0;
+				outColor.b = 0;
+				outColor.a = a >> 0;
+			}
+		};
+		
+		return {
+			pass0: pass0,
+			/* pass1 uses fixed pipeline */
+			pass2: pass2,
+			
+			shadowTexture: shadowTexture,
+			setLightDirection: function(d) {
+				lightDirection.copyFrom(d);
+				var distance = 18.0;
+				lightPosition.x = d.x * -distance;
+				lightPosition.y = d.y * -distance;
+				lightPosition.z = d.z * -distance;
+			}
+		};
+	})();
 })();

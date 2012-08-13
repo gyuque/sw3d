@@ -7,6 +7,19 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 	}
 	
 	NearestTextureSampler.prototype = {
+		getPixelDepth: function(texture, u, v) {
+			var w = texture.width;
+			var h = texture.height;
+			var x = Math.floor(u * w + 0.5);
+			var y = Math.floor(v * h + 0.5);
+			if (x < 0) {x = 0;}
+			if (y < 0) {y = 0;}
+			if (x >= w) {x = w - 1;}
+			if (y >= h) {y = h - 1;}
+			
+			return texture.z[(y * w) + x];
+		},
+		
 		getPixel: function(colorOut, texture, u, v) {
 			var w = texture.width;
 			var h = texture.height;

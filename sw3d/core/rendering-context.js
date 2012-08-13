@@ -36,9 +36,44 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		},
 		
 		/**
+		 * Replace render target for some techniques
+		 */
+		replaceRenderTarget: function(newTarget) {
+			var old = this.imageBuffer;
+			this.imageBuffer = newTarget;
+			this.rasterizer.target = newTarget;
+			return old;
+		},
+		
+		/*
+		 * Declare rendering sequence will begin
+		 */
+		beginPass: function() {
+			if (this.technique) {
+				this.rasterizer.customShader = this.technique.pixelShader || null;
+				
+				if (this.technique.beginPass) {
+					this.technique.beginPass(this);
+				}
+			}
+		},
+
+		/*
+		 * Declare rendering sequence has finished
+		 */
+		endPass: function() {
+			if (this.technique && this.technique.endPass) {
+				this.technique.endPass(this);
+			}
+			
+			this.rasterizer.customShader = null;
+		},
+		
+		/**
 		 * Transform vertices in specifeid list using current transform settings.
 		 */
 		transformVertices: function(outBuffer, inBuffer) {
+
 			this.updateTransforms();
 			var mAll = this.combinedTransforms.worldViewProjection;
 			var mRot = this.worldTransform;

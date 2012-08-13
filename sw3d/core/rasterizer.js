@@ -7,18 +7,19 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 	 * @class Polygon Rasterizer
 	 * @property {ImageBuffer} texture ImageBuffer object used as texture
 	 * @property {boolean} enableZTest Set true to do z-test while drawing
+	 * @property {Function} customShader Pixel shader function
+	 * @property {Number} culling Culling direction
 	 */
 	function Rasterizer(imageBuffer) {
+		// Public properties
 		this.target = imageBuffer;
+		this.texture = null;
+		this.enableZTest = true;
+		this.customShader = null;
+		this.culling = Rasterizer.STANDARD_CULLING;
 		
 		// Texture sampler. Default is nearest sampler.
 		this.textureSampler = smallworld3d.NearestTextureSampler ? new smallworld3d.NearestTextureSampler() : null;
-		
-		// ImageBuffer of texture
-		this.texture = null;
-		
-		// Z-test enabled?
-		this.enableZTest = true;
 		
 		// Attributes of triangle vertices
 		this.vertexAttributes = [
@@ -34,6 +35,11 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			new PolygonEdge()  // C -> A
 		];
 		
+		this.shaderOut = {
+			color: new pkg.RGBAColor(255, 255, 255, 255),
+			z: 0
+		};
+		
 		// Fill-colors
 		//  for flat shading
 		this.flatConstantColor = null;
@@ -45,6 +51,9 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		this.spanFragment = new SlopeElement();
 		this.textureFragment = new smallworld3d.RGBAColor();
 	}
+	
+	Rasterizer.STANDARD_CULLING = 0;
+	Rasterizer.REVERSE_CULLING  = 1;
 	
 	Rasterizer.prototype = {
 		/**
@@ -105,7 +114,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			index,
 			x, y, z, rhw,
 			r, g, b, a,
-			tu, tv) {
+			tu, tv, ts, tt) {
 			
 			if (index < 0 || index > 2) {
 				throw "Bad index";
@@ -124,6 +133,8 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			
 			v.textureUV.u = tu || 0;
 			v.textureUV.v = tv || 0;
+			v.textureUV.s = ts || 0;
+			v.textureUV.t = tt || 0;
 		},
 		
 		plotPoints: function() {
@@ -133,7 +144,8 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		},
 		
 		cullTest: function(v1, v2, v3) {
-			return smallworld3d.geometry.crossproduct2(v2.x - v1.x, v2.y - v1.y, v3.x - v2.x, v3.y - v2.y);
+			var cullingDir = (this.culling === Rasterizer.STANDARD_CULLING) ? 1 : -1;
+			return cullingDir * smallworld3d.geometry.crossproduct2(v2.x - v1.x, v2.y - v1.y, v3.x - v2.x, v3.y - v2.y);
 		},
 		
 		allocateSlopeBuffer: function(h) {
@@ -241,13 +253,24 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			if (xmax > w) {xmax = w;}
 			
 			// Initialize edge function values
-			var e0 = E0.start(xmin, ymin);
-			var e1 = E1.start(xmin, ymin);
-			var e2 = E2.start(xmin, ymin);
+			var cullingDir = (this.culling === Rasterizer.STANDARD_CULLING) ? 1 : -1;
+			
+			var e0 = E0.start(xmin, ymin, cullingDir);
+			var e1 = E1.start(xmin, ymin, cullingDir);
+			var e2 = E2.start(xmin, ymin, cullingDir);
 
 			var edx0 = E0.getStep();
 			var edx1 = E1.getStep();
 			var edx2 = E2.getStep();
+
+			
+			var tex = this.texture;
+			var sampler = this.textureSampler;
+			var useTexture = !!tex;
+			
+			var shader = this.customShader;
+			var useShader = !!shader;
+			var shaderOut = this.shaderOut;
 			
 			// Scan over the bounding box of target triangle
 			var lineOrigin = w * ymin;
@@ -259,7 +282,6 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 				var xRightEnd = Math.ceil(spanRightEnd.x + 0.5);
 				var xLength   = xRightEnd - xLeftEnd;
 				var spanLength = 0;
-				
 				
 				for (x = xmin;x <= xmax;++x) {
 					if (e0 <= 0 && // |
@@ -284,29 +306,45 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 								var zTestResult = zAlwaysPass || (pz[zpos] > newZ);
 
 								if (zTestResult && newZ >= 0 && newZ <= 1) {
-									var pixelColor = fragment.color;
-									
-									if (this.texture) {
-										// Fetch a texel from texture
-										this.textureSampler.getPixel(tex_fragment, this.texture, fragment.tu, fragment.tv);
+									var pixelColor;
+									if (useShader) {
+										shaderOut.z = newZ;
+										shader(shaderOut, fragment);
+										pixelColor = shaderOut.color;
+										newZ = shaderOut.z;
+									} else {
+										pixelColor = fragment.color;
+				
+										if (useTexture) {
+											// Fetch a texel from texture
+											sampler.getPixel(tex_fragment, tex, fragment.tu, fragment.tv);
 
-										// Blend with vertex color
-										pixelColor.r = tex_fragment.r * pixelColor.r / 255;
-										pixelColor.g = tex_fragment.g * pixelColor.g / 255;
-										pixelColor.b = tex_fragment.b * pixelColor.b / 255;
-										pixelColor.a = tex_fragment.a * pixelColor.a / 255;
+											// Blend with vertex color
+											pixelColor.r = tex_fragment.r * pixelColor.r / 255;
+											pixelColor.g = tex_fragment.g * pixelColor.g / 255;
+											pixelColor.b = tex_fragment.b * pixelColor.b / 255;
+											pixelColor.a = tex_fragment.a * pixelColor.a / 255;
+										}
 									}
-
-									if (pixelColor.a < 255) { // This framgent is not opaque
+									
+									if (pixelColor.a > 0 && pixelColor.a < 255) { // This framgent is not opaque
 										// Do alpha blending
 										blendColorDirect(pixelColor, pixelColor, 
 											p[pos],p[pos+1],p[pos+2],p[pos+3], pixelColor.a / 255); 
 									}
 									
-									p[pos++] = pixelColor.r;
-									p[pos++] = pixelColor.g;
-									p[pos++] = pixelColor.b;
-									p[pos++] = pixelColor.a;
+									if (pixelColor.a === 0) {
+										++pos;
+										++pos;
+										++pos;
+										++pos;
+									} else {
+										p[pos++] = pixelColor.r;
+										p[pos++] = pixelColor.g;
+										p[pos++] = pixelColor.b;
+										p[pos++] = pixelColor.a;
+									}
+									
 									pz[zpos++] = newZ;
 								} else {
 									// Z test is false
@@ -348,6 +386,8 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		this.z = 0;
 		this.tu = 0;
 		this.tv = 0;
+		this.ts = 0;
+		this.tt = 0;
 		this.rhw = 1;
 	}
 	
@@ -363,6 +403,8 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		// Texture Coordinates
 		outElement.tu = (left.tu / left.rhw) * invT + (right.tu / right.rhw) * t;
 		outElement.tv = (left.tv / left.rhw) * invT + (right.tv / right.rhw) * t;
+		outElement.ts = (left.ts / left.rhw) * invT + (right.ts / right.rhw) * t;
+		outElement.tt = (left.tt / left.rhw) * invT + (right.tt / right.rhw) * t;
 	};
 	
 	SlopeElement.prototype = {
@@ -385,6 +427,8 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			// Texture Coordinates
 			this.tu = vStart.textureUV.u * rhw1 * invT + vEnd.textureUV.u * rhw2 * t;
 			this.tv = vStart.textureUV.v * rhw1 * invT + vEnd.textureUV.v * rhw2 * t;
+			this.ts = vStart.textureUV.s * rhw1 * invT + vEnd.textureUV.s * rhw2 * t;
+			this.tt = vStart.textureUV.t * rhw1 * invT + vEnd.textureUV.t * rhw2 * t;
 			
 			// RHW
 			this.rhw = rhw1 * invT + rhw2 * t;
@@ -417,6 +461,9 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		this.dy = 0;
 		this.edgeFuncValLeft = 0;
 		this.edgeFuncVal = 0;
+
+		this.dx2 = 0;
+		this.dy2 = 0;
 	}
 	
 	PolygonEdge.prototype = {
@@ -430,10 +477,9 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			this.y = y1 ;
 			this.dx = x2 - x1;
 			this.dy = y2 - y1;
-			this.dy2 = this.dy * 2; // cache dy*2
 		},
 		
-		start: function(sx, sy) {
+		start: function(sx, sy, sign) {
 			// more about edge function, see:
 			//   A parallel algorithm for polygon rasterization
 			//   J Pineda - ACM SIGGRAPH Computer Graphics, 1988
@@ -442,8 +488,11 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			// Shift sampling point 0.5 pixel to draw better edge.
 			sx = sx*2 + 1;
 			sy = sy*2 + 1;
+
+			this.dx2 = this.dx * 2 * sign; // cache dx*2
+			this.dy2 = this.dy * 2 * sign; // cache dy*2
 			
-			this.edgeFuncValLeft = (sx - this.x) * this.dy - (sy - this.y) * this.dx;
+			this.edgeFuncValLeft = ((sx - this.x) * this.dy - (sy - this.y) * this.dx) * sign;
 			this.edgeFuncVal = this.edgeFuncValLeft;
 			return this.edgeFuncVal;
 		},
@@ -454,8 +503,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		
 		nextLine: function() {
 			// Set E(x, y+1)
-			this.edgeFuncValLeft -= this.dx;
-			this.edgeFuncValLeft -= this.dx;
+			this.edgeFuncValLeft -= this.dx2;
 			this.edgeFuncVal = this.edgeFuncValLeft;
 			
 			return this.edgeFuncVal;
