@@ -37,7 +37,8 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		
 		this.shaderOut = {
 			color: new pkg.RGBAColor(255, 255, 255, 255),
-			z: 0
+			z: 0,
+			discarded: false
 		};
 		
 		// Fill-colors
@@ -308,10 +309,18 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 								if (zTestResult && newZ >= 0 && newZ <= 1) {
 									var pixelColor;
 									if (useShader) {
+										shaderOut.discarded = false;
 										shaderOut.z = newZ;
 										shader(shaderOut, fragment);
 										pixelColor = shaderOut.color;
 										newZ = shaderOut.z;
+										
+										// Fragment is discarded by shader
+										if (shaderOut.discarded) {
+											++pos; ++pos; ++pos; ++pos;
+											++zpos;
+											continue;
+										}
 									} else {
 										pixelColor = fragment.color;
 				
