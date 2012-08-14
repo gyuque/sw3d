@@ -223,7 +223,7 @@
 				this.renderShadowTexture();
 			}
 			
-			var clearIntensity = gUsePRT ? 100 : 190;
+			var clearIntensity = (gUsePRT || gUseShadowMap) ? 100 : 190;
 
 			// ----------------------------------
 			// Main pass
@@ -280,7 +280,7 @@
 //			this.context.imageBuffer.clearZ(1);
 			this.mesh.doTransform(this.context);
 
-//			this.mesh.drawSubset(this.context, 0);
+			this.mesh.drawSubset(this.context, 0);
 			this.mesh.drawSubset(this.context, 1);
 
 			this.context.endPass();
@@ -497,6 +497,7 @@
 			}
 		};
 		
+		var kShadowAlpha = 90;
 		var sampler, tex;
 		var pass2 = {
 			beginPass: function(renderingContext) {
@@ -526,11 +527,6 @@
 				p_out.z /= p_out.w;
 				p_out.z -= 0.001;
 
-				v_out.color.r = 255;
-				v_out.color.g = 255;
-				v_out.color.b = 255;
-				v_out.color.a = 255;
-				
 				// Transform with matrices used in pass 0
 				var tp = shaderTempV;
 				transformP0.transformVec3(tp, p_in.x, p_in.y, p_in.z);
@@ -541,14 +537,12 @@
 				tp.y = 0.5 - 0.5 * tp.y;
 
 				var dp = lightDirection.dp3(v_out.N);
-				if (dp > 0) {
-					v_out.textureUV.s = 1;
-					v_out.textureUV.t = 1;
-				} else {
-					v_out.textureUV.s = tp.z;
-					v_out.textureUV.t = tp.w;
-				}
-
+				var a = kShadowAlpha * (dp*1.3 + 1.3);
+				if (a > kShadowAlpha) {a = kShadowAlpha;}
+				v_out.color.a = a >> 0;
+				
+				v_out.textureUV.s = tp.z;
+				v_out.textureUV.t = tp.w;
 				v_out.textureUV.u = tp.x;
 				v_out.textureUV.v = tp.y;
 			},
@@ -556,14 +550,15 @@
 			pixelShader: function(ps_out, ps_in) {
 				var shadowDepth = sampler.getPixelDepth(tex, ps_in.tu, ps_in.tv) + 0.001;
 				var targetDepth = ps_in.ts / ps_in.tt;
+				var shadeA = ps_in.color.a;
 				
-				var a = (shadowDepth < targetDepth) ? 90 : 0;
+				var a = (shadowDepth < targetDepth) ? kShadowAlpha : shadeA;
 				
 				var outColor = ps_out.color;
 				outColor.r = 0;
 				outColor.g = 0;
 				outColor.b = 0;
-				outColor.a = a >> 0;
+				outColor.a = a;
 			}
 		};
 		
