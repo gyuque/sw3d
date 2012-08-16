@@ -1,13 +1,27 @@
 (function(){
 	var gUsePRT = false;
 	var gUseShadowMap = !!window.SHADOW_MAP_DEMO;
+	var gUseSketchRendering = !!window.SKETCH_DEMO;
 	var gLightSwitcher = null;
 	var theViewer = null;
 	var SCREEN_WIDTH  = 300;
 	var SCREEN_HEIGHT = 300;
 	var gShadowPreviewCanvasContext = null;
+	var gSketchTextureBuffer = null;
 	
 	window.launch = function() {
+		var tex = window.SKETCH_TEXTURE_DATA;
+		if (!tex) {
+			launch2();
+		} else {
+			var textureLoader = new smallworld3d.CanvasTextureLoader(tex, function(texBuffer) {
+				gSketchTextureBuffer = texBuffer;
+				launch2();
+			});
+		}
+	};
+	
+	var launch2 = function() {
 		var shcoeffs = null;
 		
 		if (window.PRTData) {
@@ -223,18 +237,25 @@
 				this.renderShadowTexture();
 			}
 			
-			var clearIntensity = (gUsePRT || gUseShadowMap) ? 100 : 190;
+			
+			var clearIntensity = (gUsePRT || gUseShadowMap) ? 100 : gUseSketchRendering ? 255 : 190;
+			this.context.imageBuffer.clearZ(1);
+			this.context.imageBuffer.clearColor(clearIntensity, clearIntensity, clearIntensity);
+
+			if (gUseSketchRendering) {
+				this.renderSketchContour();
+				this.context.technique = SketchTechnique.pass1;
+			}
 
 			// ----------------------------------
 			// Main pass
 			this.context.beginPass();
-			this.context.imageBuffer.clearZ(1);
-			this.context.imageBuffer.clearColor(clearIntensity, clearIntensity, clearIntensity);
-			
 			this.mesh.doTransform(this.context);
 			
 			this.mesh.drawSubset(this.context, 0);
-			this.mesh.drawSubset(this.context, 1);
+			if (!gUseSketchRendering) {
+				this.mesh.drawSubset(this.context, 1);
+			}
 			this.context.endPass();
 			// ----------------------------------
 
@@ -244,7 +265,28 @@
 
 			this.context.imageBuffer.emitToCanvas(this.g);
 		},
-		
+
+		renderSketchContour: function() {
+			var L0 = this.context.lights[0].direction;
+			
+			// Configure technique
+			SketchTechnique.updateViewportScale(this.context.viewport);
+			SketchTechnique.setFillPattern(gSketchTextureBuffer);
+			SketchTechnique.setLightDirection(L0);
+			
+			// Replace with shadow mapping technique
+			var oldTechnique = this.context.technique;
+			this.context.technique = SketchTechnique.pass0;
+			
+			this.context.beginPass();
+			this.mesh.doTransform(this.context);
+			this.mesh.drawSubset(this.context, 0);
+			this.context.endPass();
+
+			// Restore saved technique
+			this.context.technique = oldTechnique;
+		},
+
 		renderShadowTexture: function() {
 			var L0 = this.context.lights[0].direction;
 			ShadowMappingTechnique.setLightDirection(L0);
@@ -481,7 +523,7 @@
 				p_out.z /= p_out.w;
 			},
 
-			pixelShader: function(ps_out, ps_in) {
+			pixelShader: function(rasterizer, ps_out, ps_in) {
 				var outColor = ps_out.color;
 
 				ps_out.z = ps_in.tu / ps_in.tv;
@@ -547,7 +589,7 @@
 				v_out.textureUV.v = tp.y;
 			},
 			
-			pixelShader: function(ps_out, ps_in) {
+			pixelShader: function(rasterizer, ps_out, ps_in) {
 				var shadowDepth = sampler.getPixelDepth(tex, ps_in.tu, ps_in.tv) + 0.001;
 				var targetDepth = ps_in.ts / ps_in.tt;
 				var shadeA = ps_in.color.a;
@@ -577,4 +619,164 @@
 			}
 		};
 	})();
+	
+	// +------------------------------------------------------
+	// | Sketch rendering technique
+	// +------------------------------------------------------
+	var SketchTechnique = (function() {
+		var invViewportScale = 1;
+		var fillPattern = null;
+		var sampler;
+		var lightDirection = new smallworld3d.geometry.Vec4(0, 0, 0);
+		var texel = new smallworld3d.RGBAColor();
+		
+		var savedStates = {
+			culling: 0
+		};
+		
+		function updateViewportScale(v) {
+			invViewportScale = 3.0 / -v.scaleY;
+		}
+		
+		function setFillPattern(tex) {
+			fillPattern = tex;
+		}
+		
+		var pass1 = {
+			beginPass: function(renderingContext) {
+				sampler = renderingContext.rasterizer.textureSampler;
+			},
+
+			vertexShader: function(renderingContext, v_out, v_in) {
+				var p_in = v_in.position;
+				var p_out = v_out.position;
+				var n_in = v_in.N;
+				var n_out = v_out.N;
+				
+				var mAll = renderingContext.combinedTransforms.worldViewProjection;
+				var mRot = renderingContext.combinedTransforms.worldView;
+				mAll.transformVec3(p_out, p_in.x, p_in.y, p_in.z);
+				mRot.transformVec3WithoutTranslation(n_out, n_in.x, n_in.y, n_in.z);
+				var dotLight = 0.3 - lightDirection.dp3(n_out) * 0.3;
+
+				p_out.x /= p_out.w;
+				p_out.y /= p_out.w;
+				p_out.z /= p_out.w;
+				
+				if (n_out.z < 0) {n_out.z *= -1;}
+				v_out.color.r = (n_out.z * 255) >> 0;
+				v_out.color.g = (dotLight * 255) >> 0;
+				v_out.textureUV.u = v_in.textureUV.u;
+				v_out.textureUV.v = v_in.textureUV.v;
+				v_out.textureUV.s = 0.5 + 0.5 * p_out.x;
+				v_out.textureUV.t = 0.5 - 0.5 * p_out.y;
+			},
+
+			pixelShader: function(rasterizer, ps_out, ps_in) {
+				var inColor = ps_in.color;
+				var highlight = inColor.g;
+				var Nz = 1.0 - (inColor.r / 255.0);
+				Nz = 1.0 - (Nz*Nz*Nz*Nz);
+				
+				var outColor = ps_out.color;
+				if (rasterizer.texture) {
+					sampler.getPixel(inColor, rasterizer.texture, ps_in.tu, ps_in.tv);
+				} else {
+					inColor.r = inColor.g = inColor.b = 255;
+				}
+					
+				sampler.getPixel(texel, fillPattern, ps_in.ts, ps_in.tt);
+				var a = Nz * (texel.r / 255.0);
+				var ia = 1.0 - a;
+				
+				inColor.r += highlight;
+				inColor.g += highlight;
+				inColor.b += highlight;
+				inColor.r >>= 6;
+				inColor.g >>= 6;
+				inColor.b >>= 6;
+				inColor.r <<= 6;
+				inColor.g <<= 6;
+				inColor.b <<= 6;
+				if (inColor.r > 255) inColor.r = 255;
+				if (inColor.g > 255) inColor.g = 255;
+				if (inColor.b > 255) inColor.b = 255;
+				
+				outColor.r = (inColor.r * ia + 255 * a) >> 0;
+				outColor.g = (inColor.g * ia + 255 * a) >> 0;
+				outColor.b = (inColor.b * ia + 255 * a) >> 0;
+/*
+				outColor.r = inColor.r ;
+				outColor.g = inColor.g ;
+				outColor.b = inColor.b ;
+*/				
+				
+				outColor.a = 255;
+			}
+		};
+		
+		var pass0 = {
+			beginPass: function(renderingContext) {
+				// Save states
+				savedStates.culling = renderingContext.rasterizer.culling;
+
+				renderingContext.rasterizer.culling = smallworld3d.Rasterizer.REVERSE_CULLING;
+				sampler = renderingContext.rasterizer.textureSampler;
+			},
+			
+			endPass: function(renderingContext) {
+				renderingContext.rasterizer.culling = savedStates.culling;
+			},
+
+
+			vertexShader: function(renderingContext, v_out, v_in) {
+				var p_in = v_in.position;
+				var p_out = v_out.position;
+				var n_in = v_in.N;
+				var n_out = v_out.N;
+				
+				var mAll = renderingContext.combinedTransforms.worldViewProjection;
+				var mRot = renderingContext.combinedTransforms.worldView;
+				var mP = renderingContext.projectionTransform;
+
+				// Transform with current transform
+
+				mAll.transformVec3(p_out, p_in.x, p_in.y, p_in.z);
+				n_out.copyFrom(n_in);
+				n_out.mul(invViewportScale / mP._11 * p_out.w);
+
+				mAll.transformVec3(p_out, p_in.x + n_out.x, p_in.y + n_out.y, p_in.z + n_out.z);
+
+				p_out.x /= p_out.w;
+				p_out.y /= p_out.w;
+				p_out.z /= p_out.w;
+
+				v_out.textureUV.s = 0.5 + 0.5 * p_out.x;
+				v_out.textureUV.t = 0.5 - 0.5 * p_out.y;
+			},
+
+			pixelShader: function(rasterizer, ps_out, ps_in) {
+				var outColor = ps_out.color;
+				sampler.getPixel(texel, fillPattern, 1.0 - ps_in.ts, 1.0 - ps_in.tt);
+				var k = (texel.r * 0.7) >> 0;
+				
+				outColor.r = k;
+				outColor.g = k;
+				outColor.b = k;
+				outColor.a = 255;
+			}
+
+		};
+
+		return {
+			pass0: pass0,
+			pass1: pass1,
+			setFillPattern: setFillPattern,
+			updateViewportScale: updateViewportScale,
+			setLightDirection: function(d) {
+				lightDirection.copyFrom(d);
+			}
+		};
+	})();
+	
 })();
