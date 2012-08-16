@@ -685,9 +685,9 @@
 				
 				var ia = 1.0 - a;
 				
-				inColor.r >>= 6;
-				inColor.g >>= 6;
-				inColor.b >>= 6;
+				inColor.r >>= 5;
+				inColor.g >>= 5;
+				inColor.b >>= 5;
 				inColor.r <<= 6;
 				inColor.g <<= 6;
 				inColor.b <<= 6;
@@ -695,6 +695,10 @@
 				outColor.r = (inColor.r * ia + 255 * a) >> 0;
 				outColor.g = (inColor.g * ia + 255 * a) >> 0;
 				outColor.b = (inColor.b * ia + 255 * a) >> 0;
+				
+				if (outColor.r > 255) {outColor.r = 255;}
+				if (outColor.g > 255) {outColor.g = 255;}
+				if (outColor.b > 255) {outColor.b = 255;}
 /*
 				outColor.r = inColor.r ;
 				outColor.g = inColor.g ;
