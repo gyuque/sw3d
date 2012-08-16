@@ -243,8 +243,12 @@
 			this.context.imageBuffer.clearColor(clearIntensity, clearIntensity, clearIntensity);
 
 			if (gUseSketchRendering) {
-				this.renderSketchContour();
-				this.context.technique = SketchTechnique.pass1;
+				// Configure technique
+				SketchTechnique.updateViewportScale(this.context.viewport);
+				SketchTechnique.setFillPattern(gSketchTextureBuffer);
+				SketchTechnique.setLightDirection(this.context.lights[0].direction);
+				
+				this.context.technique = SketchTechnique.pass0;
 			}
 
 			// ----------------------------------
@@ -263,20 +267,17 @@
 				this.drawShadows();
 			}
 
+			if (gUseSketchRendering) {
+				this.renderSketchContour();
+			}
+
 			this.context.imageBuffer.emitToCanvas(this.g);
 		},
 
 		renderSketchContour: function() {
-			var L0 = this.context.lights[0].direction;
-			
-			// Configure technique
-			SketchTechnique.updateViewportScale(this.context.viewport);
-			SketchTechnique.setFillPattern(gSketchTextureBuffer);
-			SketchTechnique.setLightDirection(L0);
-			
-			// Replace with shadow mapping technique
+			// Replace with sketch technique
 			var oldTechnique = this.context.technique;
-			this.context.technique = SketchTechnique.pass0;
+			this.context.technique = SketchTechnique.pass1;
 			
 			this.context.beginPass();
 			this.mesh.doTransform(this.context);
@@ -642,7 +643,7 @@
 			fillPattern = tex;
 		}
 		
-		var pass1 = {
+		var pass0 = {
 			beginPass: function(renderingContext) {
 				sampler = renderingContext.rasterizer.textureSampler;
 			},
@@ -657,15 +658,14 @@
 				var mRot = renderingContext.combinedTransforms.worldView;
 				mAll.transformVec3(p_out, p_in.x, p_in.y, p_in.z);
 				mRot.transformVec3WithoutTranslation(n_out, n_in.x, n_in.y, n_in.z);
-				var dotLight = 0.3 - lightDirection.dp3(n_out) * 0.3;
 
 				p_out.x /= p_out.w;
 				p_out.y /= p_out.w;
 				p_out.z /= p_out.w;
 				
-				if (n_out.z < 0) {n_out.z *= -1;}
-				v_out.color.r = (n_out.z * 255) >> 0;
-				v_out.color.g = (dotLight * 255) >> 0;
+				var dotLight = 0.5 - lightDirection.dp3(n_out) * 0.5;
+				v_out.color.r = (dotLight * 255) >> 0;
+				
 				v_out.textureUV.u = v_in.textureUV.u;
 				v_out.textureUV.v = v_in.textureUV.v;
 				v_out.textureUV.s = 0.5 + 0.5 * p_out.x;
@@ -674,33 +674,23 @@
 
 			pixelShader: function(rasterizer, ps_out, ps_in) {
 				var inColor = ps_in.color;
-				var highlight = inColor.g;
-				var Nz = 1.0 - (inColor.r / 255.0);
-				Nz = 1.0 - (Nz*Nz*Nz*Nz);
-				
+				var highlight = inColor.r / 700;
+
 				var outColor = ps_out.color;
-				if (rasterizer.texture) {
-					sampler.getPixel(inColor, rasterizer.texture, ps_in.tu, ps_in.tv);
-				} else {
-					inColor.r = inColor.g = inColor.b = 255;
-				}
+				sampler.getPixel(inColor, rasterizer.texture, ps_in.tu, ps_in.tv);
 					
 				sampler.getPixel(texel, fillPattern, ps_in.ts, ps_in.tt);
-				var a = Nz * (texel.r / 255.0);
+				var a = (texel.r / 255.0) + highlight;
+				if (a > 1.0){a = 1.0;}
+				
 				var ia = 1.0 - a;
 				
-				inColor.r += highlight;
-				inColor.g += highlight;
-				inColor.b += highlight;
 				inColor.r >>= 6;
 				inColor.g >>= 6;
 				inColor.b >>= 6;
 				inColor.r <<= 6;
 				inColor.g <<= 6;
 				inColor.b <<= 6;
-				if (inColor.r > 255) inColor.r = 255;
-				if (inColor.g > 255) inColor.g = 255;
-				if (inColor.b > 255) inColor.b = 255;
 				
 				outColor.r = (inColor.r * ia + 255 * a) >> 0;
 				outColor.g = (inColor.g * ia + 255 * a) >> 0;
@@ -715,15 +705,13 @@
 			}
 		};
 		
-		var pass0 = {
+		var pass1 = {
 			beginPass: function(renderingContext) {
 				// Save states
 				savedStates.culling = renderingContext.rasterizer.culling;
-
 				renderingContext.rasterizer.culling = smallworld3d.Rasterizer.REVERSE_CULLING;
-				sampler = renderingContext.rasterizer.textureSampler;
 			},
-			
+
 			endPass: function(renderingContext) {
 				renderingContext.rasterizer.culling = savedStates.culling;
 			},
