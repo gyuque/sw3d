@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <head>
+	<script type="text/javascript">var SKETCH_DEMO = true;</script>
+
 	<script type="text/javascript" src="../sw3d/core/types.js?v=2"></script>
 	<script type="text/javascript" src="../sw3d/core/geometry-core.js?v=2"></script>
 	<script type="text/javascript" src="../sw3d/core/imagebuffer.js?v=2"></script>
@@ -10,11 +12,9 @@
 	<script type="text/javascript" src="../sw3d/basic/mesh.js?v=2"></script>
 	<script type="text/javascript" src="../sw3d/basic/geometry-basic.js?v=2"></script>
 	<script type="text/javascript" src="../sw3d/basic/canvas-texture-loader.js?v=2"></script>
-	<script type="text/javascript" src="../sw3d/extra/spherical-harmonics.js?v=2"></script>
-	<script type="text/javascript" src="../sw3d/extra/base64.js?v=2"></script>
 
+	<script type="text/javascript" src="sketch-texture-data.js?v=2"></script>
 	<script type="text/javascript" src="miku-model.js?v=2"></script>
-	<script type="text/javascript" src="miku-shcoeffs.js?v=2"></script>
 	<script type="text/javascript" src="miku.js?v=2"></script>
 	
 	<style type="text/css">
@@ -24,33 +24,13 @@
 		.datum-credit { font-size: 11px; color: #666; font-family: Arial, sans-serif; }
 		em { display:block; font-size: 12px; font-weight: bold; font-style: normal; color: #444; margin-bottom: 0.4em; }
 		a {color: #444;}
-		#light-selector {
-			font-family: Arial, sans-serif;
-			font-size: 12px;
-			background-color: #ddd;
-			width: 120px;
-			padding: 8px;
-			margin-left: auto;
-			margin-right: auto;
-			border-radius: 4px;
-			box-shadow: 0 1px 2px #888 inset;
-			line-height: 1.9em;
-			border-bottom: 1px solid #fff;
-			color: #777;
-			text-shadow: 0 1px 0 #fff;
-		}
-		
 	</style>
 
-	<title>SH PRT test</title>
+	<title>Sketch rendering test</title>
 </head>
 <body onload="void launch()">
-	<h1>SH PRT test</h1>
+	<h1>Sketch rendering test</h1>
 	<canvas id="render-target"></canvas>
-	<p id="light-selector">
-		Light position<br>
-		<button id="btn-light1">1</button><button id="btn-light2">2</button><button id="btn-light3">3</button>
-	</p>
 	<p class="datum-credit">
 		<em>Modeled by <a href="http://uurou.blog99.fc2.com/">zima</a></em>
 		&copy;2007 Crypton Future Media, Inc.<br>

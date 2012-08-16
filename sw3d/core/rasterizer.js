@@ -311,7 +311,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 									if (useShader) {
 										shaderOut.discarded = false;
 										shaderOut.z = newZ;
-										shader(shaderOut, fragment);
+										shader(this, shaderOut, fragment);
 										pixelColor = shaderOut.color;
 										newZ = shaderOut.z;
 										
