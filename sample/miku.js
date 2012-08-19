@@ -10,6 +10,10 @@
 	var gSketchTextureBuffer = null;
 	
 	window.launch = function() {
+		if (window.MotionManager) {
+			new MotionManager(MIKU_MODEL_SOURCE.bones);
+		}
+		
 		var tex = window.SKETCH_TEXTURE_DATA;
 		if (!tex) {
 			launch2();
