@@ -11,6 +11,9 @@
 			
 			nd.name = name;
 			nd.parentIndex = parentIndex;
+			nd.position.x = x;
+			nd.position.y = y;
+			nd.position.z = z;
 			
 			this.list.push(nd);
 		},
@@ -25,6 +28,11 @@
 				if (nd.parentIndex >= 0) {
 					parentNode = ls[nd.parentIndex] || null;
 				}
+				
+				if (parentNode) {
+					parentNode.children.push(nd);
+					parentNode.hasChild = true;
+				}
 				console.log("*", nd, parentNode)
 			}
 		}
@@ -32,7 +40,10 @@
 	
 	PMDBoneTree.Node = function() {
 		this.name = null;
+		this.position = new smallworld3d.geometry.Vec4();
 		this.parentIndex = -1;
+		this.children = [];
+		this.hasChild = false;
 	}
 	
 	pkg.PMDBoneTree = PMDBoneTree;

@@ -8,10 +8,11 @@
 	var SCREEN_HEIGHT = 300;
 	var gShadowPreviewCanvasContext = null;
 	var gSketchTextureBuffer = null;
+	var gMotionManager = null;
 	
 	window.launch = function() {
 		if (window.MotionManager) {
-			new MotionManager(MIKU_MODEL_SOURCE.bones);
+			gMotionManager = new MotionManager(MIKU_MODEL_SOURCE.bones);
 		}
 		
 		var tex = window.SKETCH_TEXTURE_DATA;
@@ -273,6 +274,11 @@
 
 			if (gUseSketchRendering) {
 				this.renderSketchContour();
+			}
+
+
+			if (gMotionManager) {
+				gMotionManager.drawDebugBones(this.context);
 			}
 
 			this.context.imageBuffer.emitToCanvas(this.g);

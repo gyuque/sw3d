@@ -164,7 +164,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		},
 		
 		putOneVertex: function(v) {
-			var x = v.position.x, y = v.position.y;
+			var x = v.position.x, y = v.position.y >> 0;
 			var w = this.target.width, h = this.target.height;
 			var fbPitch = w << 2;
 			var p = this.target.color;
