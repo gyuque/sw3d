@@ -164,6 +164,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		},
 		
 		putOneVertex: function(v) {
+			var c = v.color;
 			var x = v.position.x, y = v.position.y >> 0;
 			var w = this.target.width, h = this.target.height;
 			var fbPitch = w << 2;
@@ -171,9 +172,9 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			
 			if (y >= 0 && y < h && x >= 0 && x < w) {
 				var pos = fbPitch * y + (x << 2);
-				p[pos++] = 0;
-				p[pos++] = 255;
-				p[pos++] = 255;
+				p[pos++] = c.r;
+				p[pos++] = c.g;
+				p[pos++] = c.b;
 				p[pos  ] = 255;
 			}
 		},

@@ -2,6 +2,7 @@
 	'use strict';
 	function PMDBoneTree() {
 		this.list = [];
+		this.nameMap = {};
 	}
 	
 	PMDBoneTree.prototype = {
@@ -16,6 +17,7 @@
 			nd.position.z = z;
 			
 			this.list.push(nd);
+			this.nameMap[name] = nd;
 		},
 		
 		build: function() {
@@ -32,11 +34,24 @@
 				if (parentNode) {
 					parentNode.children.push(nd);
 					parentNode.hasChild = true;
+					nd.parent = parentNode;
 				}
-				console.log("*", nd, parentNode)
+				// console.log("*", nd, parentNode)
 			}
 		}
 	};
+
+
+	PMDBoneTree.Pose = function() {
+		this.nameMap = {};
+	};
+	
+	PMDBoneTree.Pose.prototype = {
+		setBoneRotation: function(boneName, qx, qy, qz, qw) {
+			this.nameMap[boneName] = new smallworld3d.geometry.Quaternion(qx, qy, qz, qw);
+		}
+	};
+	
 	
 	PMDBoneTree.Node = function() {
 		this.name = null;
@@ -44,6 +59,8 @@
 		this.parentIndex = -1;
 		this.children = [];
 		this.hasChild = false;
+		this.parent = null;
+		this.currentPostureMatrix = new smallworld3d.geometry.M44();
 	}
 	
 	pkg.PMDBoneTree = PMDBoneTree;
