@@ -17,6 +17,8 @@
 		testPose.setBoneRotation("左肩", 0.000354,-0.109608, 0.078073, 0.990903);
 		testPose.setBoneRotation("左腕",-0.178010, 0.037099,-0.119342, 0.976060);
 		testPose.setBoneRotation("左ひじ",0.188023, 0.669247,-0.451050, 0.559740);
+		
+		boneTree.updateRotation(testPose);
 	};
 	
 	var vTmp = new smallworld3d.geometry.Vec4();
