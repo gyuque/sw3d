@@ -21,8 +21,18 @@
 				this.root = nd;
 			}
 			
+			nd.index = this.list.length;
 			this.list.push(nd);
 			this.nameMap[name] = nd;
+		},
+		
+		getIndexOfName: function(name) {
+			var nd = this.nameMap[name];
+			return nd ? nd.index : -1;
+		},
+		
+		getByIndex: function(index) {
+			return this.list[index] || null;
 		},
 		
 		build: function() {
@@ -64,20 +74,21 @@
 			var q = pose.getRotationQuaternion(node.name);
 			if (q) {
 				q.generateRotationMatrix(node.localPostureMatrix);
+			} else {
+				node.localPostureMatrix.ident();
+			}
 
-				tempM2.translate(node.position.x, node.position.y, node.position.z);
-				var counterOffset = tempM1;
-				if (parentNode) {
-					counterOffset.mul(parentNode.cumulativeMatrix, counterOffset);
-					
-					// TODO -T -> ROT -> T
-					
-					
-				} else {
-					counterOffset.copyFrom(tempM2);
-				}
-				
-//				console.log(node.name, node.localPostureMatrix)
+			var counterOffset = tempM1.translate(-node.position.x, -node.position.y, -node.position.z);
+			tempM2.mul(node.localPostureMatrix, counterOffset);
+
+			var resumeOffset = tempM1.translate(node.position.x, node.position.y, node.position.z);
+			tempM3.mul(resumeOffset, tempM2);
+			
+			if (parentNode) {
+				// second, cumulative transform <- first, local rotation
+				node.cumulativeMatrix.mul(parentNode.cumulativeMatrix, tempM3);
+			} else {
+				node.cumulativeMatrix.copyFrom(tempM3);
 			}
 		}
 	};
@@ -85,11 +96,16 @@
 
 	PMDBoneTree.Pose = function() {
 		this.nameMap = {};
+		this.convertDirectX = true;
 	};
 	
 	PMDBoneTree.Pose.prototype = {
 		setBoneRotation: function(boneName, qx, qy, qz, qw) {
-			this.nameMap[boneName] = new smallworld3d.geometry.Quaternion(qx, qy, qz, qw);
+			if (this.convertDirectX) {
+				this.nameMap[boneName] = new smallworld3d.geometry.Quaternion(-qx, -qy, qz, qw);
+			} else {
+				this.nameMap[boneName] = new smallworld3d.geometry.Quaternion(qx, qy, qz, qw);
+			}
 		},
 		
 		getRotationQuaternion: function(boneName) {
@@ -107,10 +123,12 @@
 		this.parent = null;
 		this.localPostureMatrix = new smallworld3d.geometry.M44();
 		this.cumulativeMatrix = new smallworld3d.geometry.M44();
+		this.index = 0;
 	}
 	
 	var tempM1 = new smallworld3d.geometry.M44();
 	var tempM2 = new smallworld3d.geometry.M44();
+	var tempM3 = new smallworld3d.geometry.M44();
 	
 	pkg.PMDBoneTree = PMDBoneTree;
 })(window.smallworld3d);

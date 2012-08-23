@@ -215,6 +215,11 @@
 					v.textureUV.u = vSource.uv[0];
 					v.textureUV.v = vSource.uv[1];
 				}
+				
+				if (gMotionManager) {
+					gMotionManager.prepareVertex(v, vSource.b);
+				}
+
 				mesh.addVertex(v);
 			}
 			
@@ -234,6 +239,10 @@
 		},
 		
 		render: function() {
+			if (gMotionManager) {
+				gMotionManager.updateVertices(this.mesh.vertices);
+			}
+			
 			this.rotation.mX.rotationX(this.rotation.x);
 			this.rotation.mY.rotationY(this.rotation.y);
 			this.context.worldTransform.mul(this.rotation.mX, this.rotation.mY);
@@ -254,6 +263,8 @@
 				SketchTechnique.setLightDirection(this.context.lights[0].direction);
 				
 				this.context.technique = SketchTechnique.pass0;
+			} else if (gMotionManager) {
+				this.context.technique = SkinningMeshTechnique.pass0;
 			}
 
 			// ----------------------------------
@@ -276,11 +287,11 @@
 				this.renderSketchContour();
 			}
 
-
+/*
 			if (gMotionManager) {
 				gMotionManager.drawDebugBones(this.context);
 			}
-
+*/
 			this.context.imageBuffer.emitToCanvas(this.g);
 		},
 
@@ -781,4 +792,37 @@
 		};
 	})();
 	
+	// +------------------------------------------------------
+	// | Skinning mesh technique
+	// +------------------------------------------------------
+	var SkinningMeshTechnique = (function() {
+		var localTempPos = new smallworld3d.geometry.Vec4(0, 0, 0);
+		
+		return {
+			pass0: {
+				vertexShader: function(renderingContext, v_out, v_in) {
+					var mAll = renderingContext.combinedTransforms.worldViewProjection;
+					var p_in = v_in.position;
+					var p_out = v_out.position;
+					
+					var bone = v_in.boneParams;
+					if (bone) {
+						v_in.skinningMatrix.transformVec3(localTempPos, p_in.x, p_in.y, p_in.z);
+						mAll.transformVec3(p_out, localTempPos.x, localTempPos.y, localTempPos.z);
+					} else {
+						mAll.transformVec3(p_out, p_in.x, p_in.y, p_in.z);
+					}
+					
+					p_out.x /= p_out.w;
+					p_out.y /= p_out.w;
+					p_out.z /= p_out.w;
+
+					v_out.color.copyFrom(v_in.color);
+					v_out.textureUV.u = v_in.textureUV.u;
+					v_out.textureUV.v = v_in.textureUV.v;
+				}
+			}
+		};
+	})();
+
 })();

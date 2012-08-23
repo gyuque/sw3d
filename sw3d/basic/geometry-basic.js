@@ -71,6 +71,35 @@
 		
 		return this;
 	};
+
+	/**
+	 * Blend two matrices. Typically used in skinning mesh.
+	 */
+	M44.prototype.blend = function(m1, m2, w1) {
+		var w2 = 1.0 - w1;
+		
+		this._11 = w1 * m1._11 + w2 * m2._11;
+		this._12 = w1 * m1._12 + w2 * m2._12;
+		this._13 = w1 * m1._13 + w2 * m2._13;
+		this._14 = w1 * m1._14 + w2 * m2._14;
+		
+		this._21 = w1 * m1._21 + w2 * m2._21;
+		this._22 = w1 * m1._22 + w2 * m2._22;
+		this._23 = w1 * m1._23 + w2 * m2._23;
+		this._24 = w1 * m1._24 + w2 * m2._24;
+
+		this._31 = w1 * m1._31 + w2 * m2._31;
+		this._32 = w1 * m1._32 + w2 * m2._32;
+		this._33 = w1 * m1._33 + w2 * m2._33;
+		this._34 = w1 * m1._34 + w2 * m2._34;
+		
+		this._41 = w1 * m1._41 + w2 * m2._41;
+		this._42 = w1 * m1._42 + w2 * m2._42;
+		this._43 = w1 * m1._43 + w2 * m2._43;
+		this._44 = w1 * m1._44 + w2 * m2._44;
+		
+		return this;
+	};
 	
 	var vTmp1 = new pkg.geometry.Vec4();
 	var vTmp2 = new pkg.geometry.Vec4();
