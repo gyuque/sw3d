@@ -46,11 +46,28 @@
 		boneTree.setXAxisConstraint('\u3072\u3056');
 		boneTree.updateRotation(testPose);
 		boneTree.applyIK(testPose);
+		
+		this.buildMotion(SAMPLE_MOTION);
 	};
 	
 	var vTmp = new smallworld3d.geometry.Vec4();
 	var vTmp2 = new smallworld3d.geometry.Vec4();
 	MotionManager.prototype = {
+		buildMotion: function(src) {
+			this.pmdMotion = new smallworld3d.PMDMotion();
+			
+			var frameCount = src.length;
+			for (var fi = 0;fi < frameCount;++fi) {
+				var frame = src[fi];
+				for (var bname in frame.bones) {
+					var pose = frame.bones[bname];
+					this.pmdMotion.addPose(frame.frameIndex, bname, pose.position, pose.rotationQuaternion, pose.tween);
+				}
+			}
+			
+			this.pmdMotion.buildIndex();
+		},
+		
 		prepareVertex: function(v, boneParams) {
 			v.skinningMatrix = null;
 			v.boneParams = null;
