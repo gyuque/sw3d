@@ -12,7 +12,7 @@
 	
 	window.launch = function() {
 		if (window.MotionManager) {
-			gMotionManager = new MotionManager(MIKU_MODEL_SOURCE.bones);
+			gMotionManager = new MotionManager(MIKU_MODEL_SOURCE.bones, MIKU_MODEL_SOURCE.ik_list);
 		}
 		
 		var tex = window.SKETCH_TEXTURE_DATA;

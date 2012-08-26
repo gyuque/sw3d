@@ -16,6 +16,27 @@
 	}
 	
 	Quaternion.prototype = {
+		mul: function (a, b) {
+			// from http://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/code/index.htm
+			var qax = a.x, qay = a.y, qaz = a.z, qaw = a.w,
+			qbx = b.x, qby = b.y, qbz = b.z, qbw = b.w;
+
+			this.x = qax * qbw + qay * qbz - qaz * qby + qaw * qbx;
+			this.y = -qax * qbz + qay * qbw + qaz * qbx + qaw * qby;
+			this.z = qax * qby - qay * qbx + qaz * qbw + qaw * qbz;
+			this.w = -qax * qbx - qay * qby - qaz * qbz + qaw * qbw;
+
+			return this;
+		},
+		
+		invert: function() {
+			this.x *= -1;
+			this.y *= -1;
+			this.z *= -1;
+			
+			return this;
+		},
+		
 		multiplyVec3: function (objOut, vector) {
 			var x = vector.x;
 			var y = vector.y;
@@ -38,6 +59,21 @@
 			objOut.z = iz * qw + iw * -qz + ix * -qy - iy * -qx;
 		},
 		
+		setRotationAxis: function(axis, angle) {
+			// from http://www.euclideanspace.com/maths/geometry/rotations/conversions/angleToQuaternion/index.htm
+			// axis have to be normalized
+
+			var halfAngle = angle / 2;
+			var s = Math.sin(halfAngle);
+
+			this.x = axis.x * s;
+			this.y = axis.y * s;
+			this.z = axis.z * s;
+			this.w = Math.cos(halfAngle);
+
+			return this;
+		},
+		
 		generateRotationMatrix: function(mOut) {
 			var basis = tmpV1;
 			var rotBasis = tmpV2;
@@ -58,6 +94,51 @@
 			mOut._13 = rotBasis.x; mOut._23 = rotBasis.y; mOut._33 = rotBasis.z; mOut._43 = 0;
 
 			mOut._14 = 0; mOut._24 = 0; mOut._34 = 0; mOut._44 = 1;
+			
+			return this;
+		},
+		
+		setFromRotationMatrix: function (m) {
+			// http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/index.htm
+			// assumes the upper 3x3 of m is a pure rotation matrix (i.e, unscaled)
+
+			var m11 = m._11,  m12 = m._12,  m13 = m._13;
+			var m21 = m._21,  m22 = m._22,  m23 = m._23;
+			var m31 = m._31,  m32 = m._32,  m33 = m._33;
+			var trace = m11 + m22 + m33;
+			var s;
+
+			if( trace > 0 ) {
+				s = 0.5 / Math.sqrt( trace + 1.0 );
+
+				this.w = 0.25 / s;
+				this.x = ( m32 - m23 ) * s;
+				this.y = ( m13 - m31 ) * s;
+				this.z = ( m21 - m12 ) * s;
+			} else if ( m11 > m22 && m11 > m33 ) {
+				s = 2.0 * Math.sqrt( 1.0 + m11 - m22 - m33 );
+
+				this.w = (m32 - m23 ) / s;
+				this.x = 0.25 * s;
+				this.y = (m12 + m21 ) / s;
+				this.z = (m13 + m31 ) / s;
+			} else if (m22 > m33) {
+				s = 2.0 * Math.sqrt( 1.0 + m22 - m11 - m33 );
+
+				this.w = (m13 - m31 ) / s;
+				this.x = (m12 + m21 ) / s;
+				this.y = 0.25 * s;
+				this.z = (m23 + m32 ) / s;
+			} else {
+				s = 2.0 * Math.sqrt( 1.0 + m33 - m11 - m22 );
+
+				this.w = ( m21 - m12 ) / s;
+				this.x = ( m13 + m31 ) / s;
+				this.y = ( m23 + m32 ) / s;
+				this.z = 0.25 * s;
+			}
+
+			return this;
 		}
 	};
 	

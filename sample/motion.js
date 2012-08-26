@@ -1,33 +1,51 @@
 (function(){
 	'use strict';
 
-	function MotionManager(boneList) {
+	function MotionManager(boneList, ikList) {
 		var boneTree = new smallworld3d.PMDBoneTree();
 		
+		// Build bone tree
+		var i;
 		var len = boneList.length;
-		for (var i = 0;i < len;i++) {
+		for (i = 0;i < len;i++) {
 			var b = boneList[i];
-			
 			boneTree.addNode(b.name, b.pi, b.p[0], b.p[1], -b.p[2]);
 		}
-		
 		boneTree.build();
 		
+		// Register IK bones
+		if (ikList) {
+			var ikLen = ikList.length;
+			for (i = 0;i < ikLen;i++) {
+				var ik = ikList[i];
+				boneTree.registerIKBone(ik);
+			}
+		}
+		
+		
 		this.boneTree = boneTree;
-
+		var IKTestPose = {
+		  "左足":{"name":"左足","position":{"x":0,"y":0,"z":0},"rotationQuaternion":{"x":-0.03128201514482498,"y":-0.023980608209967613,"z":-0.27965670824050903,"w":0.9592905044555664}},
+		  "左足ＩＫ":{"name":"左足ＩＫ","position":{"x":0.9543063640594482,"y":0.8959875106811523,"z":-0.15008078515529633},"rotationQuaternion":{"x":0,"y":0,"z":0,"w":1}},
+		  "左肩":{"name":"左肩","position":{"x":0,"y":0,"z":0},"rotationQuaternion":{"x":0.6415807008743286,"y":-0.10379067063331604,"z":0.279940664768219,"w":0.7065660357475281}},
+		  "首":{"name":"首","position":{"x":0,"y":0,"z":0},"rotationQuaternion":{"x":-0.0020507839508354664,"y":0.0041319564916193485,"z":0.029249079525470734,"w":0.9995618462562561}},
+		  "右髪６":{"name":"右髪６","position":{"x":0,"y":0,"z":0},"rotationQuaternion":{"x":-0.012739654630422592,"y":0.025668064132332802,"z":0.18169787526130676,"w":0.9829370975494385}},
+		};
+		
 		var testPose = new smallworld3d.PMDBoneTree.Pose();
+
+		for (var bn in IKTestPose) {
+			if (IKTestPose.hasOwnProperty(bn)) {
+				var pos = IKTestPose[bn].position;
+				var rq = IKTestPose[bn].rotationQuaternion;
+				testPose.setBoneRotation(bn, rq.x, rq.y, rq.z, rq.w);
+				testPose.setBonePosition(bn, pos.x, pos.y, pos.z);
+			}
+		}
 		
-		testPose.setBoneRotation("頭", -0.066681,0.026894,0.054463,0.995922);
-		
-		testPose.setBoneRotation("左肩", 0.000354,-0.109608, 0.078073, 0.990903);
-		testPose.setBoneRotation("左腕",-0.178010, 0.037099,-0.119342, 0.976060);
-		testPose.setBoneRotation("左ひじ",0.188023, 0.669247,-0.451050, 0.559740);
-		
-		testPose.setBoneRotation("右肩",-0.020898,0.009643,-0.121570,0.992317);
-		testPose.setBoneRotation("右腕",-0.260263,-0.188511,-0.012782,0.946866);
-		testPose.setBoneRotation("右ひじ",0.235197,-0.697900,0.448204,0.506685);
-		
+		boneTree.setXAxisConstraint('\u3072\u3056');
 		boneTree.updateRotation(testPose);
+		boneTree.applyIK(testPose);
 	};
 	
 	var vTmp = new smallworld3d.geometry.Vec4();
@@ -68,6 +86,28 @@
 			var ls = this.boneTree.list;
 			var len = ls.length;
 			for (var i = 0;i < len;i++) {
+				var pos = this.boneTree.DEBUGPOS;
+				if (!pos) break;
+				
+				renderingContext.combinedTransforms.worldViewProjection.transformVec3(vTmp, pos.x, pos.y, pos.z);
+				vTmp.x /= vTmp.w;
+				vTmp.y /= vTmp.w;
+				var sx = vTmp.x * vp.scaleX + vp.centerX;
+				var sy = vTmp.y * vp.scaleY + vp.centerY;
+				renderingContext.rasterizer.setVertexAttribute(0,
+					sx, sy, 0, 1,
+					0, 255, 0, 0);
+				renderingContext.rasterizer.setVertexAttribute(1,
+					sx+1, sy, 0, 1,
+					0, 255, 0, 0);
+				renderingContext.rasterizer.setVertexAttribute(2,
+					sx-1, sy, 0, 1,
+					0, 255, 0, 0);
+
+
+				renderingContext.rasterizer.plotPoints();
+
+				/*
 				var nd = ls[i];
 				if (nd.parent) {
 					var pos = nd.position;
@@ -99,6 +139,7 @@
 
 					renderingContext.rasterizer.plotPoints();
 				}
+				*/
 			}
 		}
 	};
