@@ -2,7 +2,6 @@
 	'use strict';
 
 	function PMDMotion() {
-		this.poseKeyFrameMap = {};
 		this.tweenParamsMap = {};
 		
 		this.maxIndex = 0;
@@ -14,21 +13,45 @@
 			// Save registered bone name
 			this.boneNameMap[boneName] = new ForeignKeyframeMap();;
 			
-			if (!this.poseKeyFrameMap[frameIndex]) {
-				this.poseKeyFrameMap[frameIndex] = new smallworld3d.PMDBoneTree.Pose();
-			}
-
 			if (!this.tweenParamsMap[frameIndex]) {
 				this.tweenParamsMap[frameIndex] = {};
 			}
 
-			var pose = this.poseKeyFrameMap[frameIndex];
-			pose.setBoneRotation(boneName, rotationQuaternion.x, rotationQuaternion.y, rotationQuaternion.z, rotationQuaternion.w);
-			pose.setBonePosition(boneName, positionOffset.x, positionOffset.y, positionOffset.z);
-
-			this.tweenParamsMap[frameIndex][boneName] = tweenParams;
+			this.tweenParamsMap[frameIndex][boneName] = {
+				tweenParams: tweenParams,
+				rotationQuaternion: rotationQuaternion,
+				positionOffset: positionOffset
+			};
+			
 			if (this.maxIndex < frameIndex) {
 				this.maxIndex = frameIndex;
+			}
+		},
+		
+		calcFrame: function(frameIndex) {
+			for (var bn in this.boneNameMap) {
+				this.calcFrameOfBone(frameIndex, bn);
+			}
+		},
+		
+		calcFrameOfBone: function(frameIndex, boneName) {
+			var boneMap = this.tweenParamsMap[frameIndex] || null;
+			var boneParams = null;
+			if (boneMap) { boneParams = boneMap[boneName]; }
+			
+			if (boneParams) { // Keyframe
+				console.log(frameIndex, boneName, boneParams);
+			} else {
+				var foreignMap = this.boneNameMap[boneName];
+				var bi = foreignMap.getBackwardKeyframe(frameIndex);
+				var fi = foreignMap.getForwardKeyframe(frameIndex);
+				if (fi < 0) {
+					// After last frame
+					console.log("TF", boneName, bi +" <<- "+ frameIndex);
+				} else {
+					// Mid frame
+					console.log("TF", boneName, bi +" <-> "+ frameIndex + " <-> " + fi);
+				}
 			}
 		},
 		
@@ -36,18 +59,6 @@
 			for (var bn in this.boneNameMap) {
 				this.buildIndexOfBone(bn);
 			}
-			console.log(this.boneNameMap);
-			/*
-			var prevKF = 0;
-			for (var i = 0;i < this.maxIndex;++i) {
-				this.backKeyframeMap[i] = prevKF;
-				if (this.poseKeyFrameMap[i]) {
-					prevKF = i;
-				}
-			}
-			
-			console.log();
-			*/
 		},
 		
 		buildIndexOfBone: function(boneName) {
@@ -80,6 +91,24 @@
 	function ForeignKeyframeMap() {
 		this.backMap = {};
 		this.fwdMap = {};
+	}
+	
+	ForeignKeyframeMap.prototype = {
+		getBackwardKeyframe: function(frameIndex) {
+			if (!this.backMap.hasOwnProperty(frameIndex)) {
+				return -1;
+			}
+			
+			return this.backMap[frameIndex];
+		},
+		
+		getForwardKeyframe: function(frameIndex) {
+			if (!this.fwdMap.hasOwnProperty(frameIndex)) {
+				return -1;
+			}
+			
+			return this.fwdMap[frameIndex];
+		}
 	}
 	
 	/*

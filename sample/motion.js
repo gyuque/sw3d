@@ -48,6 +48,8 @@
 		boneTree.applyIK(testPose);
 		
 		this.buildMotion(SAMPLE_MOTION);
+		
+		this.pmdMotion.calcFrame(1);
 	};
 	
 	var vTmp = new smallworld3d.geometry.Vec4();
