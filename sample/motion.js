@@ -49,7 +49,7 @@
 		
 		this.buildMotion(SAMPLE_MOTION);
 		
-		this.pmdMotion.calcFrame(1);
+		this.pmdMotion.calcFrame(8);
 	};
 	
 	var vTmp = new smallworld3d.geometry.Vec4();
