@@ -200,25 +200,46 @@
 		createCache: function() {
 			var len = TweenParams.CACHE_LENGTH;
 			var prevPos = -1;
+			var prevVal = 0;
 			var dupCount = 1;
+			var sum = 0;
 			this.cache = this.allocateArray(len);
+			
 			for (var i = 0;i < len;++i) {
 				var t = i / len;
 				var x = bezier0to1(t, this.x1, this.x2);
 				var xx = Math.floor(x*len);
-				var t8 = Math.floor(t * 255)
+				var y8 = Math.floor(bezier0to1(t, this.y1, this.y2) * 255)
 				
 				if (xx === prevPos) {
 					++dupCount;
 				} else {
-					console.log(dupCount, prevPos)
+					if (prevPos >= 0) {
+						this.cache[prevPos] = sum / dupCount;
+						prevVal = this.cache[prevPos];
+						
+						// X may be sparsed. Interpolate them.
+						var interpolateLength = xx - prevPos;
+						if (interpolateLength > 1) {
+							for (var j = 1;j < interpolateLength;++j) {
+								var alpha = j / interpolateLength;
+								this.cache[prevPos + j] = prevVal*(1-alpha) + y8*alpha;
+							}
+						}
+					}
+
+
 					dupCount = 1;
+					sum = 0;
 				}
-				console.log(xx, t8, xx - prevPos);
 				prevPos = xx;
+				sum += y8;
 			}
 			
-			throw 1;
+			if (prevPos >= 0) {
+				this.cache[prevPos] = sum / dupCount;
+			}
+			
 		},
 		
 		allocateArray: function(length) {
@@ -237,6 +258,31 @@
 			}
 
 			return a;
+		},
+		
+		evaluateX: function(t) {
+			return bezier0to1(t, this.x1, this.x2);
+		},
+
+		evaluateY: function(t) {
+			return bezier0to1(t, this.y1, this.y2);
+		},
+		
+		getYbyX: function(x) {
+			var len = TweenParams.CACHE_LENGTH;
+			var pos = Math.floor(x * len);
+			var sub_t = (x*len) - pos;
+
+			var nextPos = pos + 1;
+			var nextVal;
+			
+			if (pos >= len) {return 1;}
+			if (pos < 0) {return 0;}
+
+			nextVal = (nextPos >= len) ? 255
+			                           : this.cache[nextPos];
+			
+			return (this.cache[pos] * (1-sub_t) + nextVal * sub_t) / 255.0;
 		}
 	}
 	
@@ -255,4 +301,5 @@
 	}
 	
 	pkg.PMDMotion = PMDMotion;
+	pkg.PMDMotion.TweenParams = TweenParams;
 })(window.smallworld3d);
