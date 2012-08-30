@@ -23,20 +23,22 @@
 				positionOffset: positionOffset
 			};
 			
-			console.log(this.tweenParamsMap[frameIndex][boneName].tweenParams)
+		//	console.log(this.tweenParamsMap[frameIndex][boneName].tweenParams)
 			
 			if (this.maxIndex < frameIndex) {
 				this.maxIndex = frameIndex;
 			}
 		},
 		
-		calcFrame: function(frameIndex) {
-			for (var bn in this.boneNameMap) {
-				this.calcFrameOfBone(frameIndex, bn);
+		calcFrame: function(outPose, frameIndex) {
+			outPose.reset();
+			
+			for (var bname in this.boneNameMap) {
+				this.calcFrameOfBone(outPose, frameIndex, bname);
 			}
 		},
 		
-		calcFrameOfBone: function(frameIndex, boneName) {
+		calcFrameOfBone: function(outPose, frameIndex, boneName) {
 			var boneMap = this.tweenParamsMap[frameIndex] || null;
 			var boneParams = null;
 			if (boneMap) { boneParams = boneMap[boneName]; }
@@ -49,15 +51,47 @@
 				var fi = foreignMap.getForwardKeyframe(frameIndex);
 				if (fi < 0) {
 					// After last frame
-					console.log("TF", boneName, bi +" <<- "+ frameIndex);
+					var copySource = this.tweenParamsMap[bi][boneName];
+					var qSrc = copySource.rotationQuaternion;
+					var vSrc = copySource.positionOffset;
+					outPose.setBoneRotation(boneName, qSrc.x, qSrc.y, qSrc.z, qSrc.w);
+					outPose.setBonePosition(boneName, vSrc.x, vSrc.y, vSrc.z);
+					console.log("TF", boneName, bi +" <<- "+ frameIndex, copySource);
 				} else {
 					// Mid frame
 					console.log("TF", boneName, bi +" <-> "+ frameIndex + " <-> " + fi);
 					var frameLen = (fi - bi);
 					var t = (frameIndex - bi) / frameLen;
 					console.log("   t="+t)
+					
+					this.setInterpolatedPose(outPose, boneName,
+						this.tweenParamsMap[bi][boneName],
+						this.tweenParamsMap[fi][boneName],
+						t);
 				}
 			}
+		},
+		
+		setInterpolatedPose: function(outPose, boneName, p1, p2, t) {
+			var tw = p1.tweenParams;
+			var r1 = p1.rotationQuaternion;
+			var r2 = p2.rotationQuaternion;
+			var p1 = p1.positionOffset;
+			var p2 = p2.positionOffset;
+			
+			// Get modified t for each a component
+			var tR = tw.r.getYbyX(t);
+			var tX = tw.x.getYbyX(t);
+			var tY = tw.y.getYbyX(t);
+			var tZ = tw.z.getYbyX(t);
+			
+			var q = tempQ1;
+			q.makeSlerp(r1, r2, tR);
+			outPose.setBoneRotation(boneName, q.x, q.y, q.z, q.w);
+			outPose.setBonePosition(boneName, 
+				blendCoordinate(p1.x, p2.x, tX),
+				blendCoordinate(p1.y, p2.y, tY),
+				blendCoordinate(p1.z, p2.z, tZ));
 		},
 		
 		buildIndex: function() {
@@ -240,7 +274,13 @@
 		
 		return ret;
 	}
-	
+
+	function blendCoordinate(v1, v2, t) {
+		return v1 * (1 - t) + v2 * t;
+	}
+
+	var tempQ1 = new smallworld3d.geometry.Quaternion();
+
 	pkg.PMDMotion = PMDMotion;
 	pkg.PMDMotion.TweenParams = TweenParams;
 })(window.smallworld3d);

@@ -16,6 +16,15 @@
 	}
 	
 	Quaternion.prototype = {
+		copyFrom: function(copySource) {
+			this.x = copySource.x;
+			this.y = copySource.y;
+			this.z = copySource.z;
+			this.w = copySource.w;
+			
+			return this;
+		},
+		
 		mul: function (a, b) {
 			// from http://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/code/index.htm
 			var qax = a.x, qay = a.y, qaz = a.z, qaw = a.w,
@@ -139,8 +148,73 @@
 			}
 
 			return this;
+		},
+		
+		makeSlerp: function (qa, qb, t) {
+			// http://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/slerp/
+			var cosHalfTheta = qa.w * qb.w + qa.x * qb.x + qa.y * qb.y + qa.z * qb.z;
+			var qm = this;
+			
+			if (cosHalfTheta < 0) {
+				qm.w = -qb.w;
+				qm.x = -qb.x;
+				qm.y = -qb.y;
+				qm.z = -qb.z;
+
+				cosHalfTheta = -cosHalfTheta;
+			} else {
+				qm.copyFrom(qb);
+			}
+			
+			if (Math.abs(cosHalfTheta) >= 1.0) {
+				qm.w = qa.w;
+				qm.x = qa.x;
+				qm.y = qa.y;
+				qm.z = qa.z;
+
+				return qm;
+			}
+			
+			var halfTheta = Math.acos(cosHalfTheta);
+			var sinHalfTheta = Math.sqrt(1.0 - cosHalfTheta * cosHalfTheta);
+
+			if (Math.abs(sinHalfTheta) < 0.001) {
+				qm.w = 0.5 * (qa.w + qm.w);
+				qm.x = 0.5 * (qa.x + qm.x);
+				qm.y = 0.5 * (qa.y + qm.y);
+				qm.z = 0.5 * (qa.z + qm.z);
+
+				return qm;
+			}
+			
+			var ratioA = Math.sin((1 - t) * halfTheta) / sinHalfTheta;
+			var ratioB = Math.sin(t * halfTheta) / sinHalfTheta;
+
+			qm.w = (qa.w * ratioA + qm.w * ratioB);
+			qm.x = (qa.x * ratioA + qm.x * ratioB);
+			qm.y = (qa.y * ratioA + qm.y * ratioB);
+			qm.z = (qa.z * ratioA + qm.z * ratioB);
+
+			return qm;
+		},
+		
+		toString: function() {
+			return "(" + this.w + "; " + this.x + ", " + this.y + ", " + this.z + ")";
 		}
 	};
+	
+	function testSlerp() {
+		var q1 = (new Quaternion()).setRotationAxis(new smallworld3d.geometry.Vec4(0, 1, 0), 0.2);
+		var q2 = (new Quaternion()).setRotationAxis(new smallworld3d.geometry.Vec4(1, 0, 0), 0.5);
+		console.log("slerpTest - - - - - - - - - - -");
+		console.log(q1 + "  " +q2);
+		
+		var q3 = new Quaternion();
+		q3.makeSlerp(q1, q2, 0.3);
+		console.log("  "+q3);
+	}
+	
+	//testSlerp();
 	
 	var tmpV1 = new smallworld3d.geometry.Vec4();
 	var tmpV2 = new smallworld3d.geometry.Vec4();

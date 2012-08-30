@@ -282,6 +282,20 @@
 
 		getPosition: function(boneName) {
 			return this.namePosMap[boneName] || null;
+		},
+		
+		reset: function() {
+			var bname;
+			for (bname in this.nameMap) {
+				var q = this.nameMap[bname];
+				q.x = q.y = q.z = 0;
+				q.w = 1;
+			}
+
+			for (bname in this.namePosMap) {
+				var v = this.namePosMap[bname];
+				v.x = v.y = v.z = 0;
+			}
 		}
 	};
 	

@@ -33,6 +33,7 @@
 		};
 		
 		var testPose = new smallworld3d.PMDBoneTree.Pose();
+		var interpolatedPose = new smallworld3d.PMDBoneTree.Pose();
 
 		for (var bn in IKTestPose) {
 			if (IKTestPose.hasOwnProperty(bn)) {
@@ -44,12 +45,12 @@
 		}
 		
 		boneTree.setXAxisConstraint('\u3072\u3056');
-		boneTree.updateRotation(testPose);
-		boneTree.applyIK(testPose);
 		
 		this.buildMotion(SAMPLE_MOTION);
 		
-		this.pmdMotion.calcFrame(8);
+		this.pmdMotion.calcFrame(interpolatedPose, 12);
+		boneTree.updateRotation(interpolatedPose);
+		boneTree.applyIK(interpolatedPose);
 	};
 	
 	var vTmp = new smallworld3d.geometry.Vec4();
