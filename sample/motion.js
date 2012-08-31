@@ -1,8 +1,13 @@
 (function(){
 	'use strict';
+	var tempPose = null;
 
 	function MotionManager(boneList, ikList) {
 		var boneTree = new smallworld3d.PMDBoneTree();
+		this.nowPlaying = false;
+		this.showingFrame = -1;
+		this.startTime = 0;
+		this.renderer = null;
 		
 		// Build bone tree
 		var i;
@@ -21,41 +26,65 @@
 				boneTree.registerIKBone(ik);
 			}
 		}
-		
-		
-		this.boneTree = boneTree;
-		var IKTestPose = {
-		  "左足":{"name":"左足","position":{"x":0,"y":0,"z":0},"rotationQuaternion":{"x":-0.03128201514482498,"y":-0.023980608209967613,"z":-0.27965670824050903,"w":0.9592905044555664}},
-		  "左足ＩＫ":{"name":"左足ＩＫ","position":{"x":0.9543063640594482,"y":0.8959875106811523,"z":-0.15008078515529633},"rotationQuaternion":{"x":0,"y":0,"z":0,"w":1}},
-		  "左肩":{"name":"左肩","position":{"x":0,"y":0,"z":0},"rotationQuaternion":{"x":0.6415807008743286,"y":-0.10379067063331604,"z":0.279940664768219,"w":0.7065660357475281}},
-		  "首":{"name":"首","position":{"x":0,"y":0,"z":0},"rotationQuaternion":{"x":-0.0020507839508354664,"y":0.0041319564916193485,"z":0.029249079525470734,"w":0.9995618462562561}},
-		  "右髪６":{"name":"右髪６","position":{"x":0,"y":0,"z":0},"rotationQuaternion":{"x":-0.012739654630422592,"y":0.025668064132332802,"z":0.18169787526130676,"w":0.9829370975494385}},
-		};
-		
-		var testPose = new smallworld3d.PMDBoneTree.Pose();
-		var interpolatedPose = new smallworld3d.PMDBoneTree.Pose();
 
-		for (var bn in IKTestPose) {
-			if (IKTestPose.hasOwnProperty(bn)) {
-				var pos = IKTestPose[bn].position;
-				var rq = IKTestPose[bn].rotationQuaternion;
-				testPose.setBoneRotation(bn, rq.x, rq.y, rq.z, rq.w);
-				testPose.setBonePosition(bn, pos.x, pos.y, pos.z);
-			}
-		}
-		
 		boneTree.setXAxisConstraint('\u3072\u3056');
-		
+		this.boneTree = boneTree;
+
+		tempPose = new smallworld3d.PMDBoneTree.Pose();
 		this.buildMotion(SAMPLE_MOTION);
-		
-		this.pmdMotion.calcFrame(interpolatedPose, 12);
-		boneTree.updateRotation(interpolatedPose);
-		boneTree.applyIK(interpolatedPose);
 	};
 	
 	var vTmp = new smallworld3d.geometry.Vec4();
 	var vTmp2 = new smallworld3d.geometry.Vec4();
 	MotionManager.prototype = {
+		observeInputEvent: function(target) {
+			var _this = this;
+			target.addEventListener("click", function() {
+				if (!_this.nowPlaying) {
+					_this.play();
+				}
+			}, false);
+		},
+		
+		play: function() {
+			this.showingFrame = -1;
+			this.startTime = (new Date()) - 0;
+			this.showFrame();
+		},
+		
+		showFrame: function() {
+			var et = (new Date()) - this.startTime;
+			var frameIndexToShow = Math.floor(et / 15);
+			
+			if (frameIndexToShow != this.showingFrame) {
+				this.showingFrame = frameIndexToShow;
+				
+				this.showPoseOfFrame(frameIndexToShow);
+				
+				if (this.renderer) {
+					this.renderer.render();
+				}
+			}
+			
+			this.nowPlaying = (frameIndexToShow < 40);
+			this.callNextFrame();
+		},
+		
+		showPoseOfFrame: function(frameIndex) {
+			this.pmdMotion.calcFrame(tempPose, frameIndex);
+			this.boneTree.updateRotation(tempPose);
+			this.boneTree.applyIK(tempPose);
+		},
+		
+		callNextFrame: function() {
+			var _this = this;
+			if (this.nowPlaying) {
+				setTimeout(function() {
+					_this.showFrame();
+				}, 1);
+			}
+		},
+		
 		buildMotion: function(src) {
 			this.pmdMotion = new smallworld3d.PMDMotion();
 			

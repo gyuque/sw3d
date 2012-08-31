@@ -45,6 +45,7 @@
 		
 		var textureLoader = new smallworld3d.CanvasTextureLoader(MIKU_MODEL_SOURCE.texture_data, function(texBuffer) {
 			theViewer = new Viewer(document.getElementById("render-target"));
+			
 			theViewer.buildMesh(MIKU_MODEL_SOURCE, texBuffer, true, shcoeffs);
 			if (gUsePRT) {
 				theViewer.context.technique = {
@@ -66,6 +67,11 @@
 				gLightSwitcher.selectIndex(0);
 			}
 			
+			if (gMotionManager) {
+				gMotionManager.observeInputEvent(document.body);
+				gMotionManager.renderer = theViewer;
+				gMotionManager.showPoseOfFrame(0);
+			}
 			theViewer.render();
 		});
 	};
@@ -155,7 +161,9 @@
 				this.viewIsMoving = true;
 			}
 			
-			this.render();
+			if (!gMotionManager || !gMotionManager.nowPlaying) {
+				this.render();
+			}
 			
 			if (this.viewIsMoving) {
 				var _this = this;

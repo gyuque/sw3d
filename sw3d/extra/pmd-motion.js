@@ -31,6 +31,9 @@
 		},
 		
 		calcFrame: function(outPose, frameIndex) {
+			if (this.maxIndex < frameIndex) {
+				frameIndex = this.maxIndex;
+			}
 			outPose.reset();
 			
 			for (var bname in this.boneNameMap) {
@@ -44,25 +47,22 @@
 			if (boneMap) { boneParams = boneMap[boneName]; }
 			
 			if (boneParams) { // Keyframe
-				console.log(frameIndex, boneName, boneParams);
+				//console.log(frameIndex, boneName, boneParams);
+				copyPose(outPose, boneName, boneParams);
 			} else {
 				var foreignMap = this.boneNameMap[boneName];
 				var bi = foreignMap.getBackwardKeyframe(frameIndex);
 				var fi = foreignMap.getForwardKeyframe(frameIndex);
 				if (fi < 0) {
 					// After last frame
-					var copySource = this.tweenParamsMap[bi][boneName];
-					var qSrc = copySource.rotationQuaternion;
-					var vSrc = copySource.positionOffset;
-					outPose.setBoneRotation(boneName, qSrc.x, qSrc.y, qSrc.z, qSrc.w);
-					outPose.setBonePosition(boneName, vSrc.x, vSrc.y, vSrc.z);
-					console.log("TF", boneName, bi +" <<- "+ frameIndex, copySource);
+					copyPose(outPose, boneName, this.tweenParamsMap[bi][boneName]);
+					//console.log("TF", boneName, bi +" <<- "+ frameIndex, copySource);
 				} else {
 					// Mid frame
-					console.log("TF", boneName, bi +" <-> "+ frameIndex + " <-> " + fi);
+					//console.log("TF", boneName, bi +" <-> "+ frameIndex + " <-> " + fi);
 					var frameLen = (fi - bi);
 					var t = (frameIndex - bi) / frameLen;
-					console.log("   t="+t)
+					//console.log("   t="+t)
 					
 					this.setInterpolatedPose(outPose, boneName,
 						this.tweenParamsMap[bi][boneName],
@@ -277,6 +277,13 @@
 
 	function blendCoordinate(v1, v2, t) {
 		return v1 * (1 - t) + v2 * t;
+	}
+	
+	function copyPose(outPose, boneName, src) {
+		var qSrc = src.rotationQuaternion;
+		var vSrc = src.positionOffset;
+		outPose.setBoneRotation(boneName, qSrc.x, qSrc.y, qSrc.z, qSrc.w);
+		outPose.setBonePosition(boneName, vSrc.x, vSrc.y, vSrc.z);
 	}
 
 	var tempQ1 = new smallworld3d.geometry.Quaternion();

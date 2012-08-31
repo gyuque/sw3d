@@ -265,11 +265,21 @@
 	
 	PMDBoneTree.Pose.prototype = {
 		setBoneRotation: function(boneName, qx, qy, qz, qw) {
-			if (this.convertDirectX) {
-				this.nameMap[boneName] = new smallworld3d.geometry.Quaternion(-qx, -qy, qz, qw);
-			} else {
-				this.nameMap[boneName] = new smallworld3d.geometry.Quaternion(qx, qy, qz, qw);
+			if (!this.nameMap[boneName]) {
+				this.nameMap[boneName] = new smallworld3d.geometry.Quaternion();
 			}
+
+			var q = this.nameMap[boneName];
+			if (this.convertDirectX) {
+				q.x = -qx;
+				q.y = -qy;
+			} else {
+				q.x = qx;
+				q.y = qy;
+			}
+			
+			q.z = qz;
+			q.w = qw;
 		},
 		
 		setBonePosition: function(boneName, x, y, z) {
