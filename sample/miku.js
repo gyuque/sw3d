@@ -107,7 +107,7 @@
 		this.toLightDirection.copyFrom(directionalLight.direction);
 
 		this.context.projectionTransform.perspectiveFOV(Math.PI/3.0, SCREEN_WIDTH / SCREEN_HEIGHT, 1, 30);
-		this.context.viewTransform.translate(0, -6, gUsePRT ? -20 : -9);
+		this.context.viewTransform.translate(0, -6, gUsePRT ? -20 : -13);
 		
 		directionalLight.enabled = false;
 	}
@@ -280,7 +280,7 @@
 			this.context.beginPass();
 			this.mesh.doTransform(this.context);
 			
-			//this.mesh.drawSubset(this.context, 0);
+			this.mesh.drawSubset(this.context, 0);
 			if (!gUseSketchRendering) {
 				this.mesh.drawSubset(this.context, 1);
 			}

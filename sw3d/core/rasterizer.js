@@ -68,6 +68,11 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			if (this.cullTest(v1.position, v2.position, v3.position) < 0) {
 				return;
 			}
+
+			// Near clipping
+			if (v1.position.z < 0 || v2.position.z < 0 || v3.position.z < 0) {
+				return;
+			}
 			
 			var x1 = v1.position.x, y1 = v1.position.y;
 			var x2 = v2.position.x, y2 = v2.position.y;
