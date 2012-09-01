@@ -75,6 +75,8 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 				var cB = vB.color;
 				var cC = vC.color;
 				
+				if (i != 6){continue;}
+				
 				r.setVertexAttribute(0,
 					vA.position.x, vA.position.y, vA.position.z, // coordinate
 					1.0 / vA.position.w, // RHW
