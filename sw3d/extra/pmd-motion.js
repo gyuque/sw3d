@@ -11,7 +11,7 @@
 	PMDMotion.prototype = {
 		addPose: function(frameIndex, boneName, positionOffset, rotationQuaternion, tweenParams) {
 			// Save registered bone name
-			this.boneNameMap[boneName] = new ForeignKeyframeMap();;
+			this.boneNameMap[boneName] = new ForeignKeyframeMap();
 			
 			if (!this.tweenParamsMap[frameIndex]) {
 				this.tweenParamsMap[frameIndex] = {};
@@ -22,8 +22,6 @@
 				rotationQuaternion: rotationQuaternion,
 				positionOffset: positionOffset
 			};
-			
-		//	console.log(this.tweenParamsMap[frameIndex][boneName].tweenParams)
 			
 			if (this.maxIndex < frameIndex) {
 				this.maxIndex = frameIndex;
@@ -47,7 +45,6 @@
 			if (boneMap) { boneParams = boneMap[boneName]; }
 			
 			if (boneParams) { // Keyframe
-				//console.log(frameIndex, boneName, boneParams);
 				copyPose(outPose, boneName, boneParams);
 			} else {
 				var foreignMap = this.boneNameMap[boneName];
@@ -56,13 +53,10 @@
 				if (fi < 0) {
 					// After last frame
 					copyPose(outPose, boneName, this.tweenParamsMap[bi][boneName]);
-					//console.log("TF", boneName, bi +" <<- "+ frameIndex, copySource);
 				} else {
 					// Mid frame
-					//console.log("TF", boneName, bi +" <-> "+ frameIndex + " <-> " + fi);
 					var frameLen = (fi - bi);
 					var t = (frameIndex - bi) / frameLen;
-					//console.log("   t="+t)
 					
 					this.setInterpolatedPose(outPose, boneName,
 						this.tweenParamsMap[bi][boneName],
