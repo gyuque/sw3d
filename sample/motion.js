@@ -104,7 +104,7 @@
 			v.skinningMatrix = null;
 			v.boneParams = null;
 			if (boneParams) {
-				var bp = new BoneParams(boneParams[0], boneParams[1], boneParams[2] * 0.01);
+				var bp = new smallworld3d.BoneParams(boneParams[0], boneParams[1], boneParams[2] * 0.01);
 				if (bp.needsBlend) {
 					v.skinningMatrix = new smallworld3d.geometry.M44();
 				}
@@ -192,14 +192,6 @@
 			}
 		}
 	};
-	
-	function BoneParams(i1, i2, w1) {
-		this.index1 = i1;
-		this.index2 = i2;
-		this.w1 = w1;
-		this.w2 = 1.0 - w1;
-		this.needsBlend = (w1 > 0.001 && w1 < 0.999);
-	}
-	
+		
 	window.MotionManager = MotionManager;
 })();

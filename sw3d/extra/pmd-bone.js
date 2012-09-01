@@ -334,7 +334,15 @@
 		if (d < 0){d = -d;}
 		return (d < 0.00001) && (d > -0.00001);
 	}
-	
+
+	function BoneParams(i1, i2, w1) {
+		this.index1 = i1;
+		this.index2 = i2;
+		this.w1 = w1;
+		this.w2 = 1.0 - w1;
+		this.needsBlend = (w1 > 0.001 && w1 < 0.999);
+	}
+
 	var tempQ1 = new smallworld3d.geometry.Quaternion();
 	var tempQ2 = new smallworld3d.geometry.Quaternion();
 	var tempQ3 = new smallworld3d.geometry.Quaternion();
@@ -347,4 +355,5 @@
 	var tempM3 = new smallworld3d.geometry.M44();
 	
 	pkg.PMDBoneTree = PMDBoneTree;
+	pkg.BoneParams  = BoneParams;
 })(window.smallworld3d);
