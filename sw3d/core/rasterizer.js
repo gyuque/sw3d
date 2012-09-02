@@ -107,6 +107,13 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		},
 
 		/**
+		 * Render a point using first vertex attribute.
+		 */
+		plotPoint: function() {
+			this.putOneVertex(this.vertexAttributes[0]);
+		},
+
+		/**
 		 * Set current texure.
 		 */
 		setTexture: function(imageBuffer) {
@@ -148,7 +155,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			this.putOneVertex(this.vertexAttributes[1]);
 			this.putOneVertex(this.vertexAttributes[2]);
 		},
-		
+
 		cullTest: function(v1, v2, v3) {
 			var cullingDir = (this.culling === Rasterizer.STANDARD_CULLING) ? 1 : -1;
 			return cullingDir * smallworld3d.geometry.crossproduct2(v2.x - v1.x, v2.y - v1.y, v3.x - v2.x, v3.y - v2.y);
