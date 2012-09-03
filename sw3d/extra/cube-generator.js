@@ -23,8 +23,16 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		
 		var xNumPoints = xDivs + 1;
 		var yNumPoints = yDivs + 1;
-		var vmapFront = buildXYFace(xNumPoints, yNumPoints, 0, false);
+		var zNumPoints = zDivs + 1;
+		var vmapFront = buildXYFace(xNumPoints, yNumPoints, 'x', 'y', 'z', 0, false);
+		var vmapBack  = buildXYFace(xNumPoints, yNumPoints, 'x', 'y', 'z', zNumPoints - 1, true);
+		var vmapRight = buildXYFace(zNumPoints, yNumPoints, 'z', 'y', 'x', xNumPoints - 1, false);
+		var vmapLeft  = buildXYFace(zNumPoints, yNumPoints, 'z', 'y', 'x', 0, true);
+
 		vmapFront.generateVertices(vertexBuffer, indexBuffer, xSize, ySize, zSize, xDivs, yDivs, zDivs);
+		vmapBack.generateVertices(vertexBuffer, indexBuffer, xSize, ySize, zSize, xDivs, yDivs, zDivs);
+		vmapRight.generateVertices(vertexBuffer, indexBuffer, xSize, ySize, zSize, xDivs, yDivs, zDivs);
+		vmapLeft.generateVertices(vertexBuffer, indexBuffer, xSize, ySize, zSize, xDivs, yDivs, zDivs);
 		
 		return {
 			vertices: vertexBuffer,
@@ -32,7 +40,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		};
 	}
 	
-	function buildXYFace(cols, rows, reverseFace) {
+	function buildXYFace(cols, rows, colAxis, rowAxis, planeAxis, planePosition, reverseFace) {
 		var vertexMap = new VertexMap();
 		var i, j;
 
@@ -43,18 +51,27 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		var indices = {
 			x: 0, y: 0, z: 0
 		};
+
+		var nextIndices = {
+			x: 0, y: 0, z: 0
+		};
 		
-		var colAxis = 'x';
-		var rowAxis = 'y';
+		indices[planeAxis] = planePosition;
 
 		indices[rowAxis] = indexOrigins[rowAxis];
 		for (j = 0;j < (rows-1);j++) {
 			indices[colAxis] = indexOrigins[colAxis];
 			for (i = 0;i < (cols-1);i++) {
-				var vertexIndex1 = vertexMap.requestIndex(indices.x  , indices.y  , indices.z);
-				var vertexIndex2 = vertexMap.requestIndex(indices.x+1, indices.y  , indices.z);
-				var vertexIndex3 = vertexMap.requestIndex(indices.x  , indices.y+1, indices.z);
-				var vertexIndex4 = vertexMap.requestIndex(indices.x+1, indices.y+1, indices.z);
+				nextIndices.x = indices.x;
+				nextIndices.y = indices.y;
+				nextIndices.z = indices.z;
+				nextIndices[colAxis] += 1;
+				nextIndices[rowAxis] += 1;
+				
+				var vertexIndex1 = vertexMap.requestIndex(indices.x    , indices.y    , indices.z    );
+				var vertexIndex2 = vertexMap.requestIndex(nextIndices.x, indices.y    , nextIndices.z);
+				var vertexIndex3 = vertexMap.requestIndex(indices.x    , nextIndices.y, indices.z    );
+				var vertexIndex4 = vertexMap.requestIndex(nextIndices.x, nextIndices.y, nextIndices.z);
 				//console.log(vertexIndex1, vertexIndex2, vertexIndex3, vertexIndex4)
 				console.log(
 					vertexMap.xOfIndex(vertexIndex1), vertexMap.yOfIndex(vertexIndex1), '',
@@ -62,8 +79,14 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 					vertexMap.xOfIndex(vertexIndex3), vertexMap.yOfIndex(vertexIndex3), '',
 					vertexMap.xOfIndex(vertexIndex4), vertexMap.yOfIndex(vertexIndex4));
 				
-				vertexMap.faceIndices.push(vertexIndex1, vertexIndex2, vertexIndex3);
-				vertexMap.faceIndices.push(vertexIndex3, vertexIndex2, vertexIndex4);
+				if (!reverseFace) {
+					vertexMap.faceIndices.push(vertexIndex1, vertexIndex2, vertexIndex3);
+					vertexMap.faceIndices.push(vertexIndex3, vertexIndex2, vertexIndex4);
+				} else {
+					vertexMap.faceIndices.push(vertexIndex2, vertexIndex1, vertexIndex4);
+					vertexMap.faceIndices.push(vertexIndex4, vertexIndex1, vertexIndex3);
+				}
+				
 				indices[colAxis] += 1;
 			}
 			indices[rowAxis] += 1;
@@ -114,9 +137,16 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		generateVertices: function(vertexBuffer, indexBuffer, xSize, ySize, zSize, xDivs, yDivs, zDivs) {
 			var vertexIndexOrigin = vertexBuffer.length;
 			var vlen = this.list.length;
-			for (var i = 0;i < vlen;i++) {
+			var i;
+			
+			for (i = 0;i < vlen;i++) {
 				var v = this.generateVertex(i, xSize, ySize, zSize, xDivs, yDivs, zDivs);
 				vertexBuffer.push(v);
+			}
+			
+			var ilen = this.faceIndices.length;
+			for (i = 0;i < ilen;i++) {
+				indexBuffer.push(this.faceIndices[i] + vertexIndexOrigin);
 			}
 		},
 		
