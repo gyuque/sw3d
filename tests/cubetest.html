@@ -27,7 +27,7 @@
 			gRenderingContext.projectionTransform.perspectiveFOV(Math.PI/3.0, SCREEN_WIDTH / SCREEN_HEIGHT, 1, 30);
 			gRenderingContext.viewTransform.translate(0, 0, -4);
 
-			cube = smallworld3d.generateCube(1,1,1, 3,3,3);
+			cube = smallworld3d.generateCube(1,1,1, 3,7,3);
 			prepareTransformedVertices(cube);
 			
 			document.body.parentNode.addEventListener("mousemove", onMouseMove, false);
@@ -45,7 +45,7 @@
 		
 		function onMouseMove(e) {
 			gRenderingContext.imageBuffer.emitToCanvas(gG);
-			gRenderingContext.worldTransform.rotationY(e.clientX * 0.01);
+			gRenderingContext.worldTransform.rotationX(e.clientX * 0.01);
 			
 			gRenderingContext.transformVertices(cube.transformedVertices, cube.vertices);
 			gRenderingContext.applyViewportTransform(cube.transformedVertices);
@@ -54,16 +54,42 @@
 			gRenderingContext.imageBuffer.clearZ(1);
 			gRenderingContext.imageBuffer.clearColor(0, 0, 0);
 			
-			var ls = cube.transformedVertices;
-			for (var i = 0;i < ls.length;++i) {
-				var v = ls[i];
+			var vertices = cube.transformedVertices;
+			var indices = cube.indices;
+			var nTriangles = indices.length / 3;
+
+			for (var i = 0;i < nTriangles;++i) {
+				var a = indices[i*3  ];
+				var b = indices[i*3+1];
+				var c = indices[i*3+2];
+
+				var vA = vertices[a];
+				var vB = vertices[b];
+				var vC = vertices[c];
+
+				var cA = vA.color;
+				var cB = vB.color;
+				var cC = vC.color;
+
 				r.setVertexAttribute(0,
-					v.position.x, v.position.y, v.position.z, // coordinate
-					1.0 / v.position.w, // RHW
-					255, 255, 0, 255,
-					0, 0);
+					vA.position.x, vA.position.y, vA.position.z, // coordinate
+					1.0 / vA.position.w, // RHW
+					cA.r, cA.g, cA.b, cA.a,
+					vA.textureUV.u, vA.textureUV.v, vA.textureUV.s, vA.textureUV.t);
+
+				r.setVertexAttribute(1,
+					vB.position.x, vB.position.y, vB.position.z, // coordinate
+					1.0 / vB.position.w, // RHW
+					cB.r, cB.g, cB.b, cB.a,
+					vB.textureUV.u, vB.textureUV.v, vB.textureUV.s, vB.textureUV.t);
+
+				r.setVertexAttribute(2,
+					vC.position.x, vC.position.y, vC.position.z, // coordinate
+					1.0 / vC.position.w, // RHW
+					cC.r, cC.g, cC.b, cC.a,
+					vC.textureUV.u, vC.textureUV.v, vC.textureUV.s, vC.textureUV.t);
 					
-				r.plotPoint();
+				r.fillTriangle();
 			}
 		}
 	</script>
