@@ -24,19 +24,23 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		var xNumPoints = xDivs + 1;
 		var yNumPoints = yDivs + 1;
 		var zNumPoints = zDivs + 1;
-		var vmapFront = buildXYFace(xNumPoints, yNumPoints, 'x', 'y', 'z', 0, false);
-		var vmapBack  = buildXYFace(xNumPoints, yNumPoints, 'x', 'y', 'z', zNumPoints - 1, true);
-		var vmapRight = buildXYFace(zNumPoints, yNumPoints, 'z', 'y', 'x', xNumPoints - 1, false);
-		var vmapLeft  = buildXYFace(zNumPoints, yNumPoints, 'z', 'y', 'x', 0, true);
-		var vmapTop   = buildXYFace(xNumPoints, zNumPoints, 'x', 'z', 'y', 0, true);
-		var vmapBottom= buildXYFace(xNumPoints, zNumPoints, 'x', 'z', 'y', yNumPoints - 1, false);
+		var vmapFront = buildFace(xNumPoints, yNumPoints, 'x', 'y', 'z', 0, false);
+		var vmapBack  = buildFace(xNumPoints, yNumPoints, 'x', 'y', 'z', zNumPoints - 1, true);
+		var vmapRight = buildFace(zNumPoints, yNumPoints, 'z', 'y', 'x', xNumPoints - 1, false);
+		var vmapLeft  = buildFace(zNumPoints, yNumPoints, 'z', 'y', 'x', 0, true);
+		var vmapTop   = buildFace(xNumPoints, zNumPoints, 'x', 'z', 'y', 0, true);
+		var vmapBottom= buildFace(xNumPoints, zNumPoints, 'x', 'z', 'y', yNumPoints - 1, false);
 
-		vmapFront.generateVertices(vertexBuffer, indexBuffer, xSize, ySize, zSize, xDivs, yDivs, zDivs);
-		vmapBack.generateVertices(vertexBuffer, indexBuffer, xSize, ySize, zSize, xDivs, yDivs, zDivs);
-		vmapRight.generateVertices(vertexBuffer, indexBuffer, xSize, ySize, zSize, xDivs, yDivs, zDivs);
-		vmapLeft.generateVertices(vertexBuffer, indexBuffer, xSize, ySize, zSize, xDivs, yDivs, zDivs);
-		vmapTop.generateVertices(vertexBuffer, indexBuffer, xSize, ySize, zSize, xDivs, yDivs, zDivs);
-		vmapBottom.generateVertices(vertexBuffer, indexBuffer, xSize, ySize, zSize, xDivs, yDivs, zDivs);
+		function generateVerticesOnFacce(face_vmap) {
+			face_vmap.generateVertices(vertexBuffer, indexBuffer, xSize, ySize, zSize, xDivs, yDivs, zDivs);
+		}
+
+		generateVerticesOnFacce(vmapFront);
+		generateVerticesOnFacce(vmapBack);
+		generateVerticesOnFacce(vmapRight);
+		generateVerticesOnFacce(vmapLeft);
+		generateVerticesOnFacce(vmapTop);
+		generateVerticesOnFacce(vmapBottom);
 		
 		return {
 			vertices: vertexBuffer,
@@ -44,7 +48,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		};
 	}
 	
-	function buildXYFace(cols, rows, colAxis, rowAxis, planeAxis, planePosition, reverseFace) {
+	function buildFace(cols, rows, colAxis, rowAxis, planeAxis, planePosition, reverseFace) {
 		var vertexMap = new VertexMap();
 		var i, j;
 
@@ -84,14 +88,6 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 					vertexIndex3 = vertexMap.requestIndex(indices.x    , nextIndices.y, indices.z    );
 					vertexIndex4 = vertexMap.requestIndex(nextIndices.x, nextIndices.y, nextIndices.z);
 				}
-				//console.log(vertexIndex1, vertexIndex2, vertexIndex3, vertexIndex4)
-				/*
-				console.log(
-					vertexMap.xOfIndex(vertexIndex1), vertexMap.yOfIndex(vertexIndex1), '',
-					vertexMap.xOfIndex(vertexIndex2), vertexMap.yOfIndex(vertexIndex2), '',
-					vertexMap.xOfIndex(vertexIndex3), vertexMap.yOfIndex(vertexIndex3), '',
-					vertexMap.xOfIndex(vertexIndex4), vertexMap.yOfIndex(vertexIndex4));
-				*/
 				
 				if (!reverseFace) {
 					vertexMap.faceIndices.push(vertexIndex1, vertexIndex2, vertexIndex3);
