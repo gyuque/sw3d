@@ -27,7 +27,7 @@
 			gRenderingContext.projectionTransform.perspectiveFOV(Math.PI/3.0, SCREEN_WIDTH / SCREEN_HEIGHT, 1, 30);
 			gRenderingContext.viewTransform.translate(0, 0, -4);
 
-			cube = smallworld3d.generateCube(1,1,1, 3,7,3);
+			cube = smallworld3d.generateCube(3,2,1, 3,7,3);
 			prepareTransformedVertices(cube);
 			
 			document.body.parentNode.addEventListener("mousemove", onMouseMove, false);
@@ -43,9 +43,13 @@
 			obj.transformedVertices = ls;
 		}
 		
+		var tmpM1 = new smallworld3d.geometry.M44();
+		var tmpM2 = new smallworld3d.geometry.M44();
 		function onMouseMove(e) {
 			gRenderingContext.imageBuffer.emitToCanvas(gG);
-			gRenderingContext.worldTransform.rotationX(e.clientX * 0.01);
+			tmpM1.rotationX(e.clientX * 0.01);
+			tmpM2.rotationY(e.clientY * 0.01);
+			gRenderingContext.worldTransform.mul(tmpM1, tmpM2);
 			
 			gRenderingContext.transformVertices(cube.transformedVertices, cube.vertices);
 			gRenderingContext.applyViewportTransform(cube.transformedVertices);
@@ -86,7 +90,8 @@
 				r.setVertexAttribute(2,
 					vC.position.x, vC.position.y, vC.position.z, // coordinate
 					1.0 / vC.position.w, // RHW
-					cC.r, cC.g, cC.b, cC.a,
+//					cC.r, cC.g, cC.b, cC.a,
+					127, 0, 255, 255,
 					vC.textureUV.u, vC.textureUV.v, vC.textureUV.s, vC.textureUV.t);
 					
 				r.fillTriangle();

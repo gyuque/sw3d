@@ -28,11 +28,15 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		var vmapBack  = buildXYFace(xNumPoints, yNumPoints, 'x', 'y', 'z', zNumPoints - 1, true);
 		var vmapRight = buildXYFace(zNumPoints, yNumPoints, 'z', 'y', 'x', xNumPoints - 1, false);
 		var vmapLeft  = buildXYFace(zNumPoints, yNumPoints, 'z', 'y', 'x', 0, true);
+		var vmapTop   = buildXYFace(xNumPoints, zNumPoints, 'x', 'z', 'y', 0, true);
+		var vmapBottom= buildXYFace(xNumPoints, zNumPoints, 'x', 'z', 'y', yNumPoints - 1, false);
 
 		vmapFront.generateVertices(vertexBuffer, indexBuffer, xSize, ySize, zSize, xDivs, yDivs, zDivs);
 		vmapBack.generateVertices(vertexBuffer, indexBuffer, xSize, ySize, zSize, xDivs, yDivs, zDivs);
 		vmapRight.generateVertices(vertexBuffer, indexBuffer, xSize, ySize, zSize, xDivs, yDivs, zDivs);
 		vmapLeft.generateVertices(vertexBuffer, indexBuffer, xSize, ySize, zSize, xDivs, yDivs, zDivs);
+		vmapTop.generateVertices(vertexBuffer, indexBuffer, xSize, ySize, zSize, xDivs, yDivs, zDivs);
+		vmapBottom.generateVertices(vertexBuffer, indexBuffer, xSize, ySize, zSize, xDivs, yDivs, zDivs);
 		
 		return {
 			vertices: vertexBuffer,
@@ -68,16 +72,26 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 				nextIndices[colAxis] += 1;
 				nextIndices[rowAxis] += 1;
 				
-				var vertexIndex1 = vertexMap.requestIndex(indices.x    , indices.y    , indices.z    );
-				var vertexIndex2 = vertexMap.requestIndex(nextIndices.x, indices.y    , nextIndices.z);
-				var vertexIndex3 = vertexMap.requestIndex(indices.x    , nextIndices.y, indices.z    );
-				var vertexIndex4 = vertexMap.requestIndex(nextIndices.x, nextIndices.y, nextIndices.z);
+				var vertexIndex1, vertexIndex2, vertexIndex3, vertexIndex4;
+				if (planeAxis == 'y') {
+					vertexIndex1 = vertexMap.requestIndex(indices.x    , indices.y, indices.z    );
+					vertexIndex2 = vertexMap.requestIndex(nextIndices.x, indices.y, indices.z    );
+					vertexIndex3 = vertexMap.requestIndex(indices.x    , indices.y, nextIndices.z);
+					vertexIndex4 = vertexMap.requestIndex(nextIndices.x, indices.y, nextIndices.z);
+				} else {
+					vertexIndex1 = vertexMap.requestIndex(indices.x    , indices.y    , indices.z    );
+					vertexIndex2 = vertexMap.requestIndex(nextIndices.x, indices.y    , nextIndices.z);
+					vertexIndex3 = vertexMap.requestIndex(indices.x    , nextIndices.y, indices.z    );
+					vertexIndex4 = vertexMap.requestIndex(nextIndices.x, nextIndices.y, nextIndices.z);
+				}
 				//console.log(vertexIndex1, vertexIndex2, vertexIndex3, vertexIndex4)
+				/*
 				console.log(
 					vertexMap.xOfIndex(vertexIndex1), vertexMap.yOfIndex(vertexIndex1), '',
 					vertexMap.xOfIndex(vertexIndex2), vertexMap.yOfIndex(vertexIndex2), '',
 					vertexMap.xOfIndex(vertexIndex3), vertexMap.yOfIndex(vertexIndex3), '',
 					vertexMap.xOfIndex(vertexIndex4), vertexMap.yOfIndex(vertexIndex4));
+				*/
 				
 				if (!reverseFace) {
 					vertexMap.faceIndices.push(vertexIndex1, vertexIndex2, vertexIndex3);
