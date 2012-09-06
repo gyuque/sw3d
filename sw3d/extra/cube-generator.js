@@ -32,13 +32,13 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		var vmapTop   = buildFace(xNumPoints, zNumPoints, 'x', 'z', 'y', 0, true);
 		var vmapBottom= buildFace(xNumPoints, zNumPoints, 'x', 'z', 'y', yNumPoints - 1, false);
 
+
+		// Merge vertices and indices from six faces
+		
 		function generateVerticesOnFacce(face_vmap) {
 			face_vmap.generateVertices(vertexBuffer, indexBuffer, xSize, ySize, zSize, xDivs, yDivs, zDivs);
 		}
 
-		//vmapFront.generateNormalVector();
-
-		// Merge vertices and indices from six faces
 		generateVerticesOnFacce(vmapFront);
 		generateVerticesOnFacce(vmapBack);
 		generateVerticesOnFacce(vmapRight);
