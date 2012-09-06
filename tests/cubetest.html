@@ -5,10 +5,13 @@
 	<script type="text/javascript" src="../sw3d/core/geometry-core.js"></script>
 	<script type="text/javascript" src="../sw3d/core/imagebuffer.js"></script>
 	<script type="text/javascript" src="../sw3d/core/rasterizer.js"></script>
+	<script type="text/javascript" src="../sw3d/core/nearest-texture-sampler.js?v=2"></script>
 	<script type="text/javascript" src="../sw3d/core/rendering-context.js"></script>
 
 	<script type="text/javascript" src="../sw3d/basic/geometry-basic.js"></script>
+	<script type="text/javascript" src="../sw3d/basic/canvas-texture-loader.js?v=2"></script>
 	<script type="text/javascript" src="../sw3d/extra/cube-generator.js"></script>
+	<script type="text/javascript" src="../sw3d/extra/sample-textures.js"></script>
 	
 	<title>Cube Test</title>
 	
@@ -19,6 +22,12 @@
 		var cube;
 		
 		function launch() {
+			new smallworld3d.CanvasTextureLoader(smallworld3d.SampleTextures.wood, function(texBuffer) {
+				launch2(texBuffer);
+			});
+		}
+		
+		function launch2(textureImageBuffer) {
 			gCanvas = document.getElementById("out-canvas");
 			gCanvas.width = SCREEN_WIDTH;
 			gCanvas.height = SCREEN_HEIGHT;
@@ -26,13 +35,14 @@
 			gRenderingContext = new smallworld3d.RenderingContext(SCREEN_WIDTH, SCREEN_HEIGHT);
 			gRenderingContext.projectionTransform.perspectiveFOV(Math.PI/3.0, SCREEN_WIDTH / SCREEN_HEIGHT, 1, 30);
 			gRenderingContext.viewTransform.translate(0, 0, -4);
+			gRenderingContext.rasterizer.texture = textureImageBuffer;
 			
 			var dl = new smallworld3d.DirectionalLight();
 			gRenderingContext.addLight(dl);
 			dl.direction.z = -0.7071;
 			dl.direction.y = -0.7071;
 
-			cube = smallworld3d.generateCube(3,2,1, 3,7,3);
+			cube = smallworld3d.generateCube();
 			prepareTransformedVertices(cube);
 			
 			document.body.parentNode.addEventListener("mousemove", onMouseMove, false);

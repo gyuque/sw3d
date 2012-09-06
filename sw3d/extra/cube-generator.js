@@ -3,7 +3,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 (function(pkg) {
 	'use strict';
 	
-	function generateCube(xSize, ySize, zSize, xDivs, yDivs, zDivs) {
+	function generateCube(xSize, ySize, zSize, xDivs, yDivs, zDivs, uvGeneratorFunc) {
 		var undef = void 0;
 		
 		var vertexBuffer = [];
@@ -16,6 +16,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		if (xDivs === undef) { xDivs = 1; }
 		if (yDivs === undef) { yDivs = 1; }
 		if (zDivs === undef) { zDivs = 1; }
+		if (!uvGeneratorFunc) { uvGeneratorFunc = generateDefaultUV; }
 		
 		if (xDivs > 999 || yDivs > 999 || zDivs > 999) {
 			throw "Divisions must not over 999";
@@ -35,16 +36,16 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 
 		// Merge vertices and indices from six faces
 		
-		function generateVerticesOnFacce(face_vmap) {
-			face_vmap.generateVertices(vertexBuffer, indexBuffer, xSize, ySize, zSize, xDivs, yDivs, zDivs);
+		function generateVerticesOnFacce(face_name, face_vmap) {
+			face_vmap.generateVertices(face_name, vertexBuffer, indexBuffer, xSize, ySize, zSize, xDivs, yDivs, zDivs, uvGeneratorFunc);
 		}
 
-		generateVerticesOnFacce(vmapFront);
-		generateVerticesOnFacce(vmapBack);
-		generateVerticesOnFacce(vmapRight);
-		generateVerticesOnFacce(vmapLeft);
-		generateVerticesOnFacce(vmapTop);
-		generateVerticesOnFacce(vmapBottom);
+		generateVerticesOnFacce('front', vmapFront);
+		generateVerticesOnFacce('back', vmapBack);
+		generateVerticesOnFacce('right', vmapRight);
+		generateVerticesOnFacce('left', vmapLeft);
+		generateVerticesOnFacce('top', vmapTop);
+		generateVerticesOnFacce('bottom', vmapBottom);
 		
 		return {
 			vertices: vertexBuffer,
@@ -53,7 +54,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 	}
 	
 	function buildFace(cols, rows, colAxis, rowAxis, planeAxis, planePosition, reverseFace) {
-		var vertexMap = new VertexMap();
+		var vertexMap = new VertexMap(cols, rows);
 		var i, j;
 
 		var indexOrigins = {
@@ -82,15 +83,15 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 				
 				var vertexIndex1, vertexIndex2, vertexIndex3, vertexIndex4;
 				if (planeAxis == 'y') {
-					vertexIndex1 = vertexMap.requestIndex(indices.x    , indices.y, indices.z    );
-					vertexIndex2 = vertexMap.requestIndex(nextIndices.x, indices.y, indices.z    );
-					vertexIndex3 = vertexMap.requestIndex(indices.x    , indices.y, nextIndices.z);
-					vertexIndex4 = vertexMap.requestIndex(nextIndices.x, indices.y, nextIndices.z);
+					vertexIndex1 = vertexMap.requestIndex(indices.x    , indices.y, indices.z    , i  , j);
+					vertexIndex2 = vertexMap.requestIndex(nextIndices.x, indices.y, indices.z    , i+1, j);
+					vertexIndex3 = vertexMap.requestIndex(indices.x    , indices.y, nextIndices.z, i  , j+1);
+					vertexIndex4 = vertexMap.requestIndex(nextIndices.x, indices.y, nextIndices.z, i+1, j+1);
 				} else {
-					vertexIndex1 = vertexMap.requestIndex(indices.x    , indices.y    , indices.z    );
-					vertexIndex2 = vertexMap.requestIndex(nextIndices.x, indices.y    , nextIndices.z);
-					vertexIndex3 = vertexMap.requestIndex(indices.x    , nextIndices.y, indices.z    );
-					vertexIndex4 = vertexMap.requestIndex(nextIndices.x, nextIndices.y, nextIndices.z);
+					vertexIndex1 = vertexMap.requestIndex(indices.x    , indices.y    , indices.z    , i  , j);
+					vertexIndex2 = vertexMap.requestIndex(nextIndices.x, indices.y    , nextIndices.z, i+1, j);
+					vertexIndex3 = vertexMap.requestIndex(indices.x    , nextIndices.y, indices.z    , i  , j+1);
+					vertexIndex4 = vertexMap.requestIndex(nextIndices.x, nextIndices.y, nextIndices.z, i+1, j+1);
 				}
 				
 				if (!reverseFace) {
@@ -112,24 +113,29 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 	
 	// ------------------------------------
 	
-	function VertexMap() {
+	function VertexMap(cols, rows) {
 		this.map = {};
 		this.list = [];
+		this.colrowList = [];
 		this.faceIndices = [];
+		
+		this.nCols = cols;
+		this.nRows = rows;
 	}
 	
 	VertexMap.prototype = {
-		requestIndex: function(ix, iy, iz) {
+		requestIndex: function(ix, iy, iz, col, row) {
 			var k = this.makeKey(ix, iy, iz);
 			if (!this.map.hasOwnProperty(k)) {
 				var nextIndex = this.list.length;
 				this.map[k] = nextIndex;
 				this.list.push(k);
+				this.colrowList.push(row*1000 + col);
 			}
 			
 			return this.map[k];
 		},
-		
+
 		xOfIndex: function(i) {
 			var k = this.list[i];
 			return k % 1000;
@@ -144,19 +150,27 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			var k = this.list[i];
 			return Math.floor(k / 1000000) % 1000;
 		},
-		
+
+		colOfIndex: function(i) {
+			return this.colrowList[i] % 1000;
+		},
+
+		rowOfIndex: function(i) {
+			return Math.floor(this.colrowList[i] / 1000);
+		},
+
 		makeKey: function(ix, iy, iz) {
 			return ix + (iy * 1000) + (iz * 1000000);
 		},
 	
-		generateVertices: function(vertexBuffer, indexBuffer, xSize, ySize, zSize, xDivs, yDivs, zDivs) {
+		generateVertices: function(faceName, vertexBuffer, indexBuffer, xSize, ySize, zSize, xDivs, yDivs, zDivs, uvgen) {
 			var vertexIndexOrigin = vertexBuffer.length;
 			var indexBufferOrigin = indexBuffer.length;
 			var vlen = this.list.length;
 			var i;
 			
 			for (i = 0;i < vlen;++i) {
-				var v = this.generateVertex(i, xSize, ySize, zSize, xDivs, yDivs, zDivs);
+				var v = this.generateVertex(faceName, i, xSize, ySize, zSize, xDivs, yDivs, zDivs, uvgen);
 				vertexBuffer.push(v);
 			}
 			
@@ -170,7 +184,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			setNVector(vertexBuffer, vertexIndexOrigin, vlen, N);
 		},
 		
-		generateVertex: function(index, xSize, ySize, zSize, xDivs, yDivs, zDivs) {
+		generateVertex: function(faceName, index, xSize, ySize, zSize, xDivs, yDivs, zDivs, uvgen) {
 			var ix = this.xOfIndex(index);
 			var iy = this.yOfIndex(index);
 			var iz = this.zOfIndex(index);
@@ -187,6 +201,9 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			v.position.x = xOrigin + xStep*ix;
 			v.position.y = yOrigin + yStep*iy;
 			v.position.z = zOrigin + zStep*iz;
+			
+			// Set uv coordinate
+			uvgen(v.textureUV, faceName, this.colOfIndex(index), this.rowOfIndex(index), this.nCols, this.nRows);
 			
 			return v;
 		}
@@ -210,6 +227,13 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		for (var i = 0;i < destLength;++i) {
 			destList[destIndexOrigin + i].N.copyFrom(sourceN);
 		}
+	}
+	
+	function generateDefaultUV(outUV, faceName, colIndex, rowIndex, nCols, nRows) {
+		var u = colIndex / (nCols-1);
+		var v = rowIndex / (nRows-1);
+		outUV.u = u;
+		outUV.v = v;
 	}
 
 	var tmpV1 = new smallworld3d.geometry.Vec4();
