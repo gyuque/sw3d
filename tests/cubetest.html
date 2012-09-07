@@ -38,6 +38,7 @@
 			prepareTransformedVertices(cube);
 			
 			document.body.parentNode.addEventListener("mousemove", onMouseMove, false);
+			onMouseMove();
 		}
 		
 		function prepareTransformedVertices(obj) {
@@ -53,9 +54,11 @@
 		var tmpM1 = new smallworld3d.geometry.M44();
 		var tmpM2 = new smallworld3d.geometry.M44();
 		function onMouseMove(e) {
-			gRenderingContext.imageBuffer.emitToCanvas(gG);
-			tmpM1.rotationX(e.clientY * 0.01);
-			tmpM2.rotationY(e.clientX * 0.01);
+			var mouseX = e ? e.clientX : 100;
+			var mouseY = e ? e.clientY : 100;
+			
+			tmpM1.rotationX(mouseY * 0.01);
+			tmpM2.rotationY(mouseX * 0.01);
 			gRenderingContext.worldTransform.mul(tmpM1, tmpM2);
 			
 			gRenderingContext.transformVertices(cube.transformedVertices, cube.vertices);
@@ -102,6 +105,8 @@
 					
 				r.fillTriangle();
 			}
+
+			gRenderingContext.imageBuffer.emitToCanvas(gG);
 		}
 	</script>
 </head>
