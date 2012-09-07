@@ -34,7 +34,7 @@
 			gG = gCanvas.getContext("2d");
 			gRenderingContext = new smallworld3d.RenderingContext(SCREEN_WIDTH, SCREEN_HEIGHT);
 			gRenderingContext.projectionTransform.perspectiveFOV(Math.PI/3.0, SCREEN_WIDTH / SCREEN_HEIGHT, 1, 30);
-			gRenderingContext.viewTransform.translate(0, 0, -4);
+			gRenderingContext.viewTransform.translate(0, 0, -3);
 			gRenderingContext.rasterizer.texture = textureImageBuffer;
 			
 			var dl = new smallworld3d.DirectionalLight();
@@ -62,8 +62,8 @@
 		var tmpM2 = new smallworld3d.geometry.M44();
 		function onMouseMove(e) {
 			gRenderingContext.imageBuffer.emitToCanvas(gG);
-			tmpM1.rotationX(e.clientX * 0.01);
-			tmpM2.rotationY(e.clientY * 0.01);
+			tmpM1.rotationX(e.clientY * 0.01);
+			tmpM2.rotationY(e.clientX * 0.01);
 			gRenderingContext.worldTransform.mul(tmpM1, tmpM2);
 			
 			gRenderingContext.transformVertices(cube.transformedVertices, cube.vertices);
