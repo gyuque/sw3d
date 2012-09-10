@@ -296,11 +296,13 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 				var xRightEnd = Math.ceil(spanRightEnd.x + 0.5);
 				var xLength   = xRightEnd - xLeftEnd;
 				var spanLength = 0;
-				
+
 				for (x = xmin;x <= xmax;++x) {
-					if (e0 <= 0 && // |
+					if (
+						e0 <= 0 && // |
 						e1 <= 0 && // |-> Evaluate edge function values
 						e2 <= 0 && // |
+						x >= xLeftEnd && // Guard left end (XXX: may be bad hack...)
 						x < xmax) { // -------------> Reached right end of framebuffer?
 						// Inside triangle
 						++spanLength;
@@ -313,6 +315,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 							pos = zpos << 2;
 							for (x = 0;x < spanLength;x++) {
 								var xRatio = (x+xOffset) / xLength;
+				
 								SlopeElement.interpolateSlopeElements(spanLeftEnd, spanRightEnd, xRatio, fragment);
 
 								// Depth(Z) Test
@@ -336,7 +339,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 										}
 									} else {
 										pixelColor = fragment.color;
-				
+										
 										if (useTexture) {
 											// Fetch a texel from texture
 											sampler.getPixel(tex_fragment, tex, fragment.tu, fragment.tv);
@@ -386,6 +389,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 					e0 += edx0;
 					e1 += edx1;
 					e2 += edx2;
+					
 				}
 				
 				e0 = E0.nextLine();
