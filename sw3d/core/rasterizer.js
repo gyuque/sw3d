@@ -422,11 +422,12 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		// Z
 		outElement.z = left.z * invT + right.z * t;
 		
+		var rhw = left.rhw * invT + right.rhw * t;
 		// Texture Coordinates
-		outElement.tu = (left.tu / left.rhw) * invT + (right.tu / right.rhw) * t;
-		outElement.tv = (left.tv / left.rhw) * invT + (right.tv / right.rhw) * t;
-		outElement.ts = (left.ts / left.rhw) * invT + (right.ts / right.rhw) * t;
-		outElement.tt = (left.tt / left.rhw) * invT + (right.tt / right.rhw) * t;
+		outElement.tu = (left.tu  * invT + right.tu * t) / rhw;
+		outElement.tv = (left.tv  * invT + right.tv * t) / rhw;
+		outElement.ts = (left.ts  * invT + right.ts * t) / rhw;
+		outElement.tt = (left.tt  * invT + right.tt * t) / rhw;
 	};
 	
 	SlopeElement.prototype = {
