@@ -298,8 +298,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 				var spanLength = 0;
 
 				for (x = xmin;x <= xmax;++x) {
-					if (
-						e0 <= 0 && // |
+					if (e0 <= 0 && // |
 						e1 <= 0 && // |-> Evaluate edge function values
 						e2 <= 0 && // |
 						x >= xLeftEnd && // Guard left end (XXX: may be bad hack...)
