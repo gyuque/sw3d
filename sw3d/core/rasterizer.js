@@ -312,7 +312,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 							
 							zpos = lineOrigin + (x - spanLength);
 							pos = zpos << 2;
-							for (x = 0;x < spanLength;x++) {
+							for (x = 0;x < spanLength;++x) {
 								var xRatio = (x+xOffset) / xLength;
 				
 								SlopeElement.interpolateSlopeElements(spanLeftEnd, spanRightEnd, xRatio, fragment);
