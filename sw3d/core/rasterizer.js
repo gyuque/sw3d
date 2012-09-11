@@ -252,11 +252,16 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			
 			var zAlwaysPass = !this.enableZTest;
 			
+			// Function shortcuts
+			var fFloor = Math.floor;
+			var fCeil = Math.ceil;
+			var interpolateSlopeElements = SlopeElement.interpolateSlopeElements;
+			
 			// to integer
-			ymin = Math.floor(ymin + 0.5);
-			ymax = Math.ceil(ymax + 0.5);
-			xmin = Math.floor(xmin + 0.5);
-			xmax = Math.ceil(xmax + 0.5);
+			ymin = fFloor(ymin + 0.5);
+			ymax = fCeil(ymax + 0.5);
+			xmin = fFloor(xmin + 0.5);
+			xmax = fCeil(xmax + 0.5);
 			
 			// Y clipping
 			if (ymin < 0) {ymin = 0;}
@@ -292,8 +297,8 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 				var spanLeftEnd = this.leftSlope[y];
 				var spanRightEnd = this.rightSlope[y];
 				
-				var xLeftEnd = Math.floor(spanLeftEnd.x + 0.5);
-				var xRightEnd = Math.ceil(spanRightEnd.x + 0.5);
+				var xLeftEnd = fFloor(spanLeftEnd.x + 0.5);
+				var xRightEnd = fCeil(spanRightEnd.x + 0.5);
 				var xLength   = xRightEnd - xLeftEnd;
 				var spanLength = 0;
 
@@ -315,7 +320,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 							for (x = 0;x < spanLength;++x) {
 								var xRatio = (x+xOffset) / xLength;
 				
-								SlopeElement.interpolateSlopeElements(spanLeftEnd, spanRightEnd, xRatio, fragment);
+								interpolateSlopeElements(spanLeftEnd, spanRightEnd, xRatio, fragment);
 
 								// Depth(Z) Test
 								var newZ = fragment.z;
@@ -531,10 +536,9 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			// Set E(x, y+1)
 			this.edgeFuncValLeft -= this.dx2;
 			this.edgeFuncVal = this.edgeFuncValLeft;
-			
 			return this.edgeFuncVal;
 		}
 	};
-	
+
 	pkg.Rasterizer = Rasterizer;
 })(window.smallworld3d);
