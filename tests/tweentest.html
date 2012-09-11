@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<head>
+	<script type="text/javascript" src="../sw3d/core/types.js"></script>
+	<script type="text/javascript" src="../sw3d/core/geometry-core.js"></script>
+	<script type="text/javascript" src="../sw3d/basic/geometry-basic.js"></script>
+	<script type="text/javascript" src="../sw3d/extra/quaternion.js"></script>
+	<script type="text/javascript" src="../sw3d/extra/pmd-bone.js"></script>
+	<script type="text/javascript" src="../sw3d/extra/pmd-motion.js"></script>
+
+	<script type="text/javascript">
+function doTest() {
+	var tw = new smallworld3d.PMDMotion.TweenParams(0.2, 0.2, 0.3, 0.9);
+	tw.createCache();
+	
+	var cv = document.getElementById("cv");
+	var g = cv.getContext("2d");
+	
+	drawEvals(tw, g);
+	drawInterpolated(tw, g);
+}
+
+function transY(y) {
+	y *= 300;
+	return Math.floor(350 - y);
+}
+
+function transX(x) {
+	x *= 300;
+	return Math.floor(50 + x);
+}
+
+function drawEvals(tw, g) {
+	g.fillStyle = "#def";
+	
+	for (var i = 0;i <= 1000;i++) {
+		var t = i / 1000.0;
+		var x = tw.evaluateX(t);
+		var y = tw.evaluateY(t);
+		g.fillRect(transX(x)-1, transY(y)-1, 3, 3);
+	}
+}
+
+function drawInterpolated(tw, g) {
+	g.fillStyle = "#000";
+	
+	for (var i = 0;i <= 300;i += 10) {
+		var v = tw.getYbyX(i / 300.0);
+		var y = transY(v);
+		g.fillRect(i+50, y, 1, 1);
+		console.log(i, v)
+	}	
+}
+
+
+	</script>
+	
+	
+</head>
+<body onload="void doTest()">
+	<canvas width="400" height="400" id="cv"></canvas>
+</body>

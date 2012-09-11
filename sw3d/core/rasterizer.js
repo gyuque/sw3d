@@ -68,6 +68,11 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			if (this.cullTest(v1.position, v2.position, v3.position) < 0) {
 				return;
 			}
+
+			// Near clipping
+			if (v1.position.z < 0 || v2.position.z < 0 || v3.position.z < 0) {
+				return;
+			}
 			
 			var x1 = v1.position.x, y1 = v1.position.y;
 			var x2 = v2.position.x, y2 = v2.position.y;
@@ -99,6 +104,13 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			this.flatConstantColor = v1.color;
 			this.scan(vlist[ix1].position.x, vlist[iy1].position.y,
 				      vlist[ix3].position.x, vlist[iy3].position.y);
+		},
+
+		/**
+		 * Render a point using first vertex attribute.
+		 */
+		plotPoint: function() {
+			this.putOneVertex(this.vertexAttributes[0]);
 		},
 
 		/**
@@ -143,7 +155,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			this.putOneVertex(this.vertexAttributes[1]);
 			this.putOneVertex(this.vertexAttributes[2]);
 		},
-		
+
 		cullTest: function(v1, v2, v3) {
 			var cullingDir = (this.culling === Rasterizer.STANDARD_CULLING) ? 1 : -1;
 			return cullingDir * smallworld3d.geometry.crossproduct2(v2.x - v1.x, v2.y - v1.y, v3.x - v2.x, v3.y - v2.y);
@@ -164,16 +176,17 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		},
 		
 		putOneVertex: function(v) {
-			var x = v.position.x, y = v.position.y;
+			var c = v.color;
+			var x = v.position.x, y = v.position.y >> 0;
 			var w = this.target.width, h = this.target.height;
 			var fbPitch = w << 2;
 			var p = this.target.color;
 			
 			if (y >= 0 && y < h && x >= 0 && x < w) {
 				var pos = fbPitch * y + (x << 2);
-				p[pos++] = 0;
-				p[pos++] = 255;
-				p[pos++] = 255;
+				p[pos++] = c.r;
+				p[pos++] = c.g;
+				p[pos++] = c.b;
 				p[pos  ] = 255;
 			}
 		},
@@ -239,11 +252,16 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			
 			var zAlwaysPass = !this.enableZTest;
 			
+			// Function shortcuts
+			var fFloor = Math.floor;
+			var fCeil = Math.ceil;
+			var interpolateSlopeElements = SlopeElement.interpolateSlopeElements;
+			
 			// to integer
-			ymin = Math.floor(ymin + 0.5);
-			ymax = Math.ceil(ymax + 0.5);
-			xmin = Math.floor(xmin + 0.5);
-			xmax = Math.ceil(xmax + 0.5);
+			ymin = fFloor(ymin + 0.5);
+			ymax = fCeil(ymax + 0.5);
+			xmin = fFloor(xmin + 0.5);
+			xmax = fCeil(xmax + 0.5);
 			
 			// Y clipping
 			if (ymin < 0) {ymin = 0;}
@@ -279,15 +297,16 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 				var spanLeftEnd = this.leftSlope[y];
 				var spanRightEnd = this.rightSlope[y];
 				
-				var xLeftEnd = Math.floor(spanLeftEnd.x + 0.5);
-				var xRightEnd = Math.ceil(spanRightEnd.x + 0.5);
+				var xLeftEnd = fFloor(spanLeftEnd.x + 0.5);
+				var xRightEnd = fCeil(spanRightEnd.x + 0.5);
 				var xLength   = xRightEnd - xLeftEnd;
 				var spanLength = 0;
-				
+
 				for (x = xmin;x <= xmax;++x) {
 					if (e0 <= 0 && // |
 						e1 <= 0 && // |-> Evaluate edge function values
 						e2 <= 0 && // |
+						x >= xLeftEnd && // Guard left end (XXX: may be bad hack...)
 						x < xmax) { // -------------> Reached right end of framebuffer?
 						// Inside triangle
 						++spanLength;
@@ -298,9 +317,10 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 							
 							zpos = lineOrigin + (x - spanLength);
 							pos = zpos << 2;
-							for (x = 0;x < spanLength;x++) {
+							for (x = 0;x < spanLength;++x) {
 								var xRatio = (x+xOffset) / xLength;
-								SlopeElement.interpolateSlopeElements(spanLeftEnd, spanRightEnd, xRatio, fragment);
+				
+								interpolateSlopeElements(spanLeftEnd, spanRightEnd, xRatio, fragment);
 
 								// Depth(Z) Test
 								var newZ = fragment.z;
@@ -323,7 +343,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 										}
 									} else {
 										pixelColor = fragment.color;
-				
+										
 										if (useTexture) {
 											// Fetch a texel from texture
 											sampler.getPixel(tex_fragment, tex, fragment.tu, fragment.tv);
@@ -373,6 +393,7 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 					e0 += edx0;
 					e1 += edx1;
 					e2 += edx2;
+					
 				}
 				
 				e0 = E0.nextLine();
@@ -409,11 +430,12 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 		// Z
 		outElement.z = left.z * invT + right.z * t;
 		
+		var rhw = left.rhw * invT + right.rhw * t;
 		// Texture Coordinates
-		outElement.tu = (left.tu / left.rhw) * invT + (right.tu / right.rhw) * t;
-		outElement.tv = (left.tv / left.rhw) * invT + (right.tv / right.rhw) * t;
-		outElement.ts = (left.ts / left.rhw) * invT + (right.ts / right.rhw) * t;
-		outElement.tt = (left.tt / left.rhw) * invT + (right.tt / right.rhw) * t;
+		outElement.tu = (left.tu  * invT + right.tu * t) / rhw;
+		outElement.tv = (left.tv  * invT + right.tv * t) / rhw;
+		outElement.ts = (left.ts  * invT + right.ts * t) / rhw;
+		outElement.tt = (left.tt  * invT + right.tt * t) / rhw;
 	};
 	
 	SlopeElement.prototype = {
@@ -514,10 +536,9 @@ if(!window.smallworld3d){ window.smallworld3d = {}; }
 			// Set E(x, y+1)
 			this.edgeFuncValLeft -= this.dx2;
 			this.edgeFuncVal = this.edgeFuncValLeft;
-			
 			return this.edgeFuncVal;
 		}
 	};
-	
+
 	pkg.Rasterizer = Rasterizer;
 })(window.smallworld3d);

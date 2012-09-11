@@ -8,8 +8,13 @@
 	var SCREEN_HEIGHT = 300;
 	var gShadowPreviewCanvasContext = null;
 	var gSketchTextureBuffer = null;
+	var gMotionManager = null;
 	
 	window.launch = function() {
+		if (window.MotionManager) {
+			gMotionManager = new MotionManager(MIKU_MODEL_SOURCE.bones, MIKU_MODEL_SOURCE.ik_list);
+		}
+		
 		var tex = window.SKETCH_TEXTURE_DATA;
 		if (!tex) {
 			launch2();
@@ -40,6 +45,7 @@
 		
 		var textureLoader = new smallworld3d.CanvasTextureLoader(MIKU_MODEL_SOURCE.texture_data, function(texBuffer) {
 			theViewer = new Viewer(document.getElementById("render-target"));
+			
 			theViewer.buildMesh(MIKU_MODEL_SOURCE, texBuffer, true, shcoeffs);
 			if (gUsePRT) {
 				theViewer.context.technique = {
@@ -61,6 +67,11 @@
 				gLightSwitcher.selectIndex(0);
 			}
 			
+			if (gMotionManager) {
+				gMotionManager.observeInputEvent(document.body);
+				gMotionManager.renderer = theViewer;
+				gMotionManager.showPoseOfFrame(0);
+			}
 			theViewer.render();
 		});
 	};
@@ -150,7 +161,9 @@
 				this.viewIsMoving = true;
 			}
 			
-			this.render();
+			if (!gMotionManager || !gMotionManager.nowPlaying) {
+				this.render();
+			}
 			
 			if (this.viewIsMoving) {
 				var _this = this;
@@ -210,6 +223,11 @@
 					v.textureUV.u = vSource.uv[0];
 					v.textureUV.v = vSource.uv[1];
 				}
+				
+				if (gMotionManager) {
+					gMotionManager.prepareVertex(v, vSource.b);
+				}
+
 				mesh.addVertex(v);
 			}
 			
@@ -229,6 +247,10 @@
 		},
 		
 		render: function() {
+			if (gMotionManager) {
+				gMotionManager.updateVertices(this.mesh.vertices);
+			}
+			
 			this.rotation.mX.rotationX(this.rotation.x);
 			this.rotation.mY.rotationY(this.rotation.y);
 			this.context.worldTransform.mul(this.rotation.mX, this.rotation.mY);
@@ -249,6 +271,8 @@
 				SketchTechnique.setLightDirection(this.context.lights[0].direction);
 				
 				this.context.technique = SketchTechnique.pass0;
+			} else if (gMotionManager) {
+				this.context.technique = SkinningMeshTechnique.pass0;
 			}
 
 			// ----------------------------------
@@ -271,6 +295,11 @@
 				this.renderSketchContour();
 			}
 
+/*
+			if (gMotionManager) {
+				gMotionManager.drawDebugBones(this.context);
+			}
+*/
 			this.context.imageBuffer.emitToCanvas(this.g);
 		},
 
@@ -771,4 +800,37 @@
 		};
 	})();
 	
+	// +------------------------------------------------------
+	// | Skinning mesh technique
+	// +------------------------------------------------------
+	var SkinningMeshTechnique = (function() {
+		var localTempPos = new smallworld3d.geometry.Vec4(0, 0, 0);
+		
+		return {
+			pass0: {
+				vertexShader: function(renderingContext, v_out, v_in) {
+					var mAll = renderingContext.combinedTransforms.worldViewProjection;
+					var p_in = v_in.position;
+					var p_out = v_out.position;
+					
+					var bone = v_in.boneParams;
+					if (bone) {
+						v_in.skinningMatrix.transformVec3(localTempPos, p_in.x, p_in.y, p_in.z);
+						mAll.transformVec3(p_out, localTempPos.x, localTempPos.y, localTempPos.z);
+					} else {
+						mAll.transformVec3(p_out, p_in.x, p_in.y, p_in.z);
+					}
+					
+					p_out.x /= p_out.w;
+					p_out.y /= p_out.w;
+					p_out.z /= p_out.w;
+
+					v_out.color.copyFrom(v_in.color);
+					v_out.textureUV.u = v_in.textureUV.u;
+					v_out.textureUV.v = v_in.textureUV.v;
+				}
+			}
+		};
+	})();
+
 })();

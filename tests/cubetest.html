@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<head>
+	<script type="text/javascript" src="../build/sw3d-basic.js"></script>
+	<script type="text/javascript" src="../sw3d/extra/cube-generator.js"></script>
+	<script type="text/javascript" src="../sw3d/extra/sample-textures.js"></script>
+	
+	<title>Cube Test</title>
+	
+	<script type="text/javascript">
+		var gRenderingContext, gCanvas, gG;
+		var SCREEN_WIDTH = 320;
+		var SCREEN_HEIGHT = 240;
+		var cube;
+		
+		function launch() {
+			new smallworld3d.CanvasTextureLoader(smallworld3d.SampleTextures.wood, function(texBuffer) {
+				launch2(texBuffer);
+			});
+		}
+		
+		function launch2(textureImageBuffer) {
+			gCanvas = document.getElementById("out-canvas");
+			gCanvas.width = SCREEN_WIDTH;
+			gCanvas.height = SCREEN_HEIGHT;
+			gG = gCanvas.getContext("2d");
+			gRenderingContext = new smallworld3d.RenderingContext(SCREEN_WIDTH, SCREEN_HEIGHT);
+			gRenderingContext.projectionTransform.perspectiveFOV(Math.PI/3.0, SCREEN_WIDTH / SCREEN_HEIGHT, 1, 30);
+			gRenderingContext.viewTransform.translate(0, 0, -3);
+			gRenderingContext.rasterizer.texture = textureImageBuffer;
+			
+			var dl = new smallworld3d.DirectionalLight();
+			gRenderingContext.addLight(dl);
+			dl.direction.z = -0.7071;
+			dl.direction.y = -0.7071;
+
+			cube = smallworld3d.generateCube();
+			prepareTransformedVertices(cube);
+			
+			document.body.parentNode.addEventListener("mousemove", onMouseMove, false);
+			onMouseMove();
+		}
+		
+		function prepareTransformedVertices(obj) {
+			var len = obj.vertices.length;
+			var ls = [];
+			for (var i = 0;i < len;i++) {
+				ls.push(new smallworld3d.TransformedVertex());
+			}
+			
+			obj.transformedVertices = ls;
+		}
+		
+		var tmpM1 = new smallworld3d.geometry.M44();
+		var tmpM2 = new smallworld3d.geometry.M44();
+		function onMouseMove(e) {
+			var mouseX = e ? e.clientX : 100;
+			var mouseY = e ? e.clientY : 100;
+			
+			tmpM1.rotationX(mouseY * 0.01);
+			tmpM2.rotationY(mouseX * 0.01);
+			gRenderingContext.worldTransform.mul(tmpM1, tmpM2);
+			
+			gRenderingContext.transformVertices(cube.transformedVertices, cube.vertices);
+			gRenderingContext.applyViewportTransform(cube.transformedVertices);
+
+			var r = gRenderingContext.rasterizer;
+			gRenderingContext.imageBuffer.clearZ(1);
+			gRenderingContext.imageBuffer.clearColor(0, 0, 0);
+			
+			var vertices = cube.transformedVertices;
+			var indices = cube.indices;
+			var nTriangles = indices.length / 3;
+
+			for (var i = 0;i < nTriangles;++i) {
+				var a = indices[i*3  ];
+				var b = indices[i*3+1];
+				var c = indices[i*3+2];
+
+				var vA = vertices[a];
+				var vB = vertices[b];
+				var vC = vertices[c];
+
+				var cA = vA.color;
+				var cB = vB.color;
+				var cC = vC.color;
+
+				r.setVertexAttribute(0,
+					vA.position.x, vA.position.y, vA.position.z, // coordinate
+					1.0 / vA.position.w, // RHW
+					cA.r, cA.g, cA.b, cA.a,
+					vA.textureUV.u, vA.textureUV.v, vA.textureUV.s, vA.textureUV.t);
+
+				r.setVertexAttribute(1,
+					vB.position.x, vB.position.y, vB.position.z, // coordinate
+					1.0 / vB.position.w, // RHW
+					cB.r, cB.g, cB.b, cB.a,
+					vB.textureUV.u, vB.textureUV.v, vB.textureUV.s, vB.textureUV.t);
+
+				r.setVertexAttribute(2,
+					vC.position.x, vC.position.y, vC.position.z, // coordinate
+					1.0 / vC.position.w, // RHW
+					cC.r, cC.g, cC.b, cC.a,
+					vC.textureUV.u, vC.textureUV.v, vC.textureUV.s, vC.textureUV.t);
+					
+				r.fillTriangle();
+			}
+
+			gRenderingContext.imageBuffer.emitToCanvas(gG);
+		}
+	</script>
+</head>
+<body onload="void launch();">
+	<canvas id="out-canvas"></canvas>
+</body>
